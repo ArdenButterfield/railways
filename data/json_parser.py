@@ -38,29 +38,26 @@ def convert(source, dest):
             dest_structure[id]["endjoin"] = []
             dest_structure[id]["middlejoins"] = {}
     intersections = defaultdict(set)
-    num_ids = len(dest_structure)
     ctr = 0
-    print("finding intersections...")
     for id in dest_structure:
         last_point = len(dest_structure[id]["coordinates"]) - 1
-        print(f"{ctr} of {num_ids}")
+        # print(f"{ctr} of {num_ids}")
         start = dest_structure[id]["coordinates"][0]
         end = dest_structure[id]["coordinates"][-1]
-        for test_id in dest_structure:
-            i = 0
-            for point in dest_structure[test_id]["coordinates"]:
-                if (point == start and not point is start):
-                    intersections[tuple(point)].add((id, 0))
-                    intersections[tuple(point)].add((test_id, i))
-                elif (point == end and not point is end):
-                    intersections[tuple(point)].add((id, last_point))
-                    intersections[tuple(point)].add((test_id, i))
-                i += 1
-        ctr += 1
-    print(intersections)
+        intersections[tuple(start)].add((id,0))
+        intersections[tuple(end)].add((id,last_point))
+    for test_id in dest_structure:
+        i = 0
+        for point in dest_structure[test_id]["coordinates"]:
+            if tuple(point) in intersections:
+                intersections[tuple(point)].add((test_id, i))
+            i += 1
+    ctr += 1
 
     for inter in intersections:
-        if len(intersections[inter]) == 2:
+        if len(intersections[inter]) == 1:
+            pass
+        elif len(intersections[inter]) == 2:
             a, b = list(intersections[inter])
             # Sometimes, there might be two tracks stuck together end to end
             if is_start(a) and is_start(b):
@@ -195,5 +192,4 @@ def convert(source, dest):
             dest_structure[sp2[0]][sp2_place].append(opp_joiner)
         else:
             print(f"There should only be 2 or three rails at an intersection: {inter}: {intersections[inter]}")
-    # print(dest_structure)
-convert("California.geojson", 0)
+convert("Oregon.geojson", 0)
