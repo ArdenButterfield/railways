@@ -2,3 +2,5 @@ data/*.osm
 data/*.geojson
 music
 radio
+.idea
+**/.DS_Store
