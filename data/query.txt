@@ -1,0 +1,5 @@
+[out:json];
+{{geocodeArea:Washington}}->.searchArea;
+(way[railway=rail](area.searchArea););
+/*added by auto repair*/(._;>;);
+/*end of auto repair*/out;
