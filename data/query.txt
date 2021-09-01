@@ -1,5 +1,11 @@
+Railway map data source:
+
+https://overpass-turbo.eu
+
+This is the command, the geocodeArea value can be changed for other states, it
+was just too much data to get all of them at once.
+
 [out:json];
 {{geocodeArea:Washington}}->.searchArea;
 (way[railway=rail](area.searchArea););
-/*added by auto repair*/(._;>;);
-/*end of auto repair*/out;
+(._;>;);out;

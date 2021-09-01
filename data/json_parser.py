@@ -3,8 +3,6 @@ import pickle
 import math
 from collections import defaultdict
 
-START = 0
-END = -1
 FORWARDS = True
 BACKWARDS = False
 EARTH_RADIUS = 6378137.0
@@ -212,6 +210,13 @@ def convert(sources, dest):
         for point in dest_structure[id]["coordinates"]:
             zones.add(get_zone(point))
         dest_structure[id]["zones"] = zones
+    for id in dest_structure:
+        dest_structure[id]["distances"] = \
+            [0 for _ in range(len(dest_structure[id]["coordinates"]))]
+        for j in range(len(dest_structure[id]["coordinates"]) - 1):
+            dest_structure[id]["distances"][j] = math.dist(
+                dest_structure[id]["coordinates"][j],
+                dest_structure[id]["coordinates"][j + 1])
     print(dest_structure)
     with open(dest, 'wb') as dest_file:
         pickle.dump(dest_structure, dest_file)
