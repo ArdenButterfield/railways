@@ -1,4 +1,5 @@
 import json
+import pickle
 from collections import defaultdict
 
 START = 0
@@ -10,6 +11,9 @@ def is_acute(a, b, c):
     # a, b, c are lists of lat lon coords each. The angle in question is ABC.
     # Essentially, we are asking, is the dot product positive
     return ((a[0] - b[0]) * (c[0] - b[0]) + (a[1] - b[1]) * (c[1] - b[1])) > 0
+
+def get_zone(coord):
+    return (int(coord[0]*10),int(coord[1]*10))
 
 def convert(source, dest):
     """Format of join entries:
@@ -192,4 +196,11 @@ def convert(source, dest):
             dest_structure[sp2[0]][sp2_place].append(opp_joiner)
         else:
             print(f"There should only be 2 or three rails at an intersection: {inter}: {intersections[inter]}")
-convert("Oregon.geojson", 0)
+    for id in dest_structure:
+        zones = set()
+        for point in dest_structure[id]["coordinates"]:
+            zones.add(get_zone(point))
+        dest_structure[id]["zones"] = zones
+    with open(dest, 'wb') as dest_file:
+        pickle.dump(dest_structure, dest_file)
+convert("RedmondOR.geojson", "RedmondOR.pickle")
