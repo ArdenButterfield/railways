@@ -1,11 +1,13 @@
 import json
 import pickle
+import math
 from collections import defaultdict
 
 START = 0
 END = -1
 FORWARDS = True
 BACKWARDS = False
+EARTH_RADIUS = 6378137.0
 
 def is_acute(a, b, c):
     # a, b, c are lists of lat lon coords each. The angle in question is ABC.
@@ -13,9 +15,18 @@ def is_acute(a, b, c):
     return ((a[0] - b[0]) * (c[0] - b[0]) + (a[1] - b[1]) * (c[1] - b[1])) > 0
 
 def get_zone(coord):
-    return (int(coord[0]*10),int(coord[1]*10))
+    return (int(coord[0] // 1000), int(coord[1] // 1000))
 
-def convert(source, dest):
+def latlon_to_mercator(coord):
+    # Adapted from https://wiki.openstreetmap.org/wiki/Mercator
+    # this algorithm (pseudo-Mercator) treats the earth as a sphere
+    lon, lat = coord
+    x = math.radians(lon) * EARTH_RADIUS
+    y = math.log(math.tan(math.pi / 4 + math.radians(lat) / 2)) * EARTH_RADIUS
+    return (x,y)
+
+
+def convert(sources, dest):
     """Format of join entries:
     startjoin/endjoin: None or (ID#, point on that ID#, dir)
     middlejoin: {(point, dir): (ID, pt, dir)}
@@ -29,20 +40,21 @@ def convert(source, dest):
         id, index = point
         return index == 0
 
-    with open(source) as f:
-        data = json.load(f)
     dest_structure = {}
-    for feature in data["features"]:
-        if feature["geometry"]["type"] == "LineString":
-            id = int(feature["properties"]["@id"][4:])
-            # Remove "way/" from start of id number
-            dest_structure[id] = {}
-            dest_structure[id]["coordinates"] = feature["geometry"]["coordinates"]
-            dest_structure[id]["startjoin"] = []
-            dest_structure[id]["endjoin"] = []
-            dest_structure[id]["middlejoins"] = {}
+    for source in sources:
+        with open(source) as f:
+            data = json.load(f)
+        for feature in data["features"]:
+            if feature["geometry"]["type"] == "LineString":
+                id = int(feature["properties"]["@id"][4:])
+                # Remove "way/" from start of id number
+                dest_structure[id] = {}
+                dest_structure[id]["coordinates"] = \
+                    [latlon_to_mercator(i) for i in feature["geometry"]["coordinates"]]
+                dest_structure[id]["startjoin"] = []
+                dest_structure[id]["endjoin"] = []
+                dest_structure[id]["middlejoins"] = {}
     intersections = defaultdict(set)
-    ctr = 0
     for id in dest_structure:
         last_point = len(dest_structure[id]["coordinates"]) - 1
         # print(f"{ctr} of {num_ids}")
@@ -56,7 +68,6 @@ def convert(source, dest):
             if tuple(point) in intersections:
                 intersections[tuple(point)].add((test_id, i))
             i += 1
-    ctr += 1
 
     for inter in intersections:
         if len(intersections[inter]) == 1:
@@ -201,6 +212,7 @@ def convert(source, dest):
         for point in dest_structure[id]["coordinates"]:
             zones.add(get_zone(point))
         dest_structure[id]["zones"] = zones
+    print(dest_structure)
     with open(dest, 'wb') as dest_file:
         pickle.dump(dest_structure, dest_file)
-convert("RedmondOR.geojson", "RedmondOR.pickle")
+convert(["California.geojson","Oregon.geojson","Washington.geojson"], "PNW.pickle")
