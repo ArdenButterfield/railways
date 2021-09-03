@@ -220,4 +220,5 @@ def convert(sources, dest):
     print(dest_structure)
     with open(dest, 'wb') as dest_file:
         pickle.dump(dest_structure, dest_file)
-convert(["California.geojson","Oregon.geojson","Washington.geojson"], "PNW.pickle")
+# convert(["California.geojson","Oregon.geojson","Washington.geojson"], "PNW.pickle")
+convert(["RedmondOR.geojson"],"RedmondOR.pickle")
