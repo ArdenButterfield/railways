@@ -1,5 +1,5 @@
 import pickle
-import pygame
+# import pygame
 
 FORWARDS = True
 BACKWARDS = False
@@ -9,7 +9,7 @@ RIGHT_BLINK = 1
 
 with open("data/RedmondOR.pickle", 'rb') as f:
     MAP_DATA = pickle.load(f)
-print(MAP_DATA)
+# print(MAP_DATA)
 
 def which_side(a,vert,b):
     # Which side is vector from vert to b, relative to vector from vert to a?
@@ -105,18 +105,36 @@ class Train():
         # Move by amount. return False if at dead end, otherwise true.
         while amount:
             if self.direction == FORWARDS:
-                if self._distance_to_next_point() >= amount:
+                segment = self._distance_to_next_point()
+                if amount >= segment:
                     self.index += 1
                     self.offset = 0
                     if self._at_deadend():
                         return False
                     self._switch_rail()
+                    amount -= segment
+                else:
+                    self.offset += amount
+                    amount = 0
+            else:
+                if self.offset == 0:
+                    self.index -= 1
+                    self.offset = MAP_DATA[self.track_id]['distances'][self.index]
+                segment = self.offset
+                if amount >= segment:
+                    self.offset = 0
+                    if self._at_deadend():
+                        return False
+                    self._switch_rail()
+                    amount -= segment
 
     def debugpos(self):
-        print(f'{self.index}, {self.track_id}, {self.offset}, [{MAP_DATA[self.track_id]["coordinates"]}]')
+        print(f'{self.index}, {self.track_id}, {self.offset}, [{MAP_DATA[self.track_id]["coordinates"][self.index]}]')
 
 a = Train(441256441)
+print('set up')
 for i in range(10):
-    a.move(1)
+    print('moving')
+    a.move(100)
     a.debugpos()
 print("done")
