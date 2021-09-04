@@ -8,8 +8,9 @@ NO_BLINK = 0
 RIGHT_BLINK = 1
 
 with open("data/RedmondOR.pickle", 'rb') as f:
-    MAP_DATA = pickle.load(f)
-# print(MAP_DATA)
+    MAP_DATA, ZONE_DIR = pickle.load(f)
+print(MAP_DATA)
+print(ZONE_DIR)
 
 def which_side(a,vert,b):
     # Which side is vector from vert to b, relative to vector from vert to a?
@@ -130,10 +131,18 @@ class Train():
                     amount -= segment
         return True
 
+    def current_position(self):
+        if self.offset == 0:
+            return MAP_DATA[self.track_id]['coordinates'][self.index]
+        x1, y1 = MAP_DATA[self.track_id]['coordinates'][self.index]
+        x2, y2 = MAP_DATA[self.track_id]['coordinates'][self.index + 1]
+        a = self.offset /  MAP_DATA[self.track_id]['distances'][self.index]
+        return (x1 + a * (x2 - x1), y1 + a * (y2 - y1))
+
     def debugpos(self):
         print(f'{self.index}, {self.track_id}, {self.offset}, [{MAP_DATA[self.track_id]["coordinates"][self.index]}]')
 
-a = Train(441256441, direction=BACKWARDS)
+"""a = Train(441256441, direction=BACKWARDS)
 print('set up')
 for i in range(100):
     print('moving')
@@ -141,4 +150,4 @@ for i in range(100):
         print("end of line")
         break
     a.debugpos()
-print("done")
+print("done")"""

@@ -217,8 +217,13 @@ def convert(sources, dest):
             dest_structure[id]["distances"][j] = math.dist(
                 dest_structure[id]["coordinates"][j],
                 dest_structure[id]["coordinates"][j + 1])
-    print(dest_structure)
+    # print(dest_structure)
+    zones = defaultdict(set)
+    for id in dest_structure:
+        for z in dest_structure[id]['zones']:
+            zones[z].add(id)
+    print(zones)
     with open(dest, 'wb') as dest_file:
-        pickle.dump(dest_structure, dest_file)
-# convert(["California.geojson","Oregon.geojson","Washington.geojson"], "PNW.pickle")
+        pickle.dump((dest_structure, dict(zones)), dest_file)
+convert(["California.geojson","Oregon.geojson","Washington.geojson"], "PNW.pickle")
 convert(["RedmondOR.geojson"],"RedmondOR.pickle")
