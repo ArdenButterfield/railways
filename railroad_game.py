@@ -39,7 +39,7 @@ class Train():
         return dist_between_points - self.offset
 
     def _at_end(self):
-        return self.offset == len(MAP_DATA[self.track_id]['coordinates']) - 1
+        return self.index == len(MAP_DATA[self.track_id]['coordinates']) - 1
 
     def _at_junction(self):
         return (self.direction == FORWARDS and self._at_end()) or \
@@ -71,7 +71,7 @@ class Train():
 
             if len(MAP_DATA[self.track_id][source]) == 1:
                 self.track_id, self.offset, self.direction = \
-                    MAP_DATA[self.track_id][source]
+                    MAP_DATA[self.track_id][source][0]
 
             elif len(MAP_DATA[self.track_id][source]) == 2:
                 point0 = self._get_second_point(
@@ -104,6 +104,7 @@ class Train():
     def move(self, amount):
         # Move by amount. return False if at dead end, otherwise true.
         while amount:
+            print(amount)
             if self.direction == FORWARDS:
                 segment = self._distance_to_next_point()
                 if amount >= segment:
@@ -117,7 +118,7 @@ class Train():
                     self.offset += amount
                     amount = 0
             else:
-                if self.offset == 0:
+                if self.offset == 0 and self.index > 0:
                     self.index -= 1
                     self.offset = MAP_DATA[self.track_id]['distances'][self.index]
                 segment = self.offset
@@ -127,14 +128,17 @@ class Train():
                         return False
                     self._switch_rail()
                     amount -= segment
+        return True
 
     def debugpos(self):
         print(f'{self.index}, {self.track_id}, {self.offset}, [{MAP_DATA[self.track_id]["coordinates"][self.index]}]')
 
-a = Train(441256441)
+a = Train(441256441, direction=BACKWARDS)
 print('set up')
-for i in range(10):
+for i in range(100):
     print('moving')
-    a.move(100)
+    if not a.move(10):
+        print("end of line")
+        break
     a.debugpos()
 print("done")
