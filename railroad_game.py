@@ -105,6 +105,9 @@ class Train():
     def _at_end(self):
         return self.index == len(MAP_DATA[self.track_id]['coordinates']) - 1
 
+    def _at_start(self):
+        return self.index == 0 and self.offset == 0
+
     def _at_junction(self):
         return (self.direction == FORWARDS and self._at_end()) or \
                (self.direction == BACKWARDS and self.offset == 0) or \
@@ -114,7 +117,7 @@ class Train():
     def _at_deadend(self):
         return (self.direction == FORWARDS and self._at_end() and
                 not MAP_DATA[self.track_id]['endjoin']) or \
-               (self.direction == BACKWARDS and self.index == 0 and self.offset == 0 and
+               (self.direction == BACKWARDS and self._at_start() and
                 not MAP_DATA[self.track_id]['startjoin'])
 
     def _get_second_point(self,entry):
@@ -129,7 +132,7 @@ class Train():
         # If we actually switch rails, the function returns True.
         switched = False
         if (self.direction == FORWARDS and self._at_end()) \
-                or (self.direction == BACKWARDS and self.index == 0 and self.offset == 0):
+                or (self.direction == BACKWARDS and self._at_start()):
             switched = True
             if self.direction == FORWARDS:
                 source = 'endjoin'
@@ -241,7 +244,8 @@ screen = pygame.display.set_mode(size)
         if event.type == pygame.QUIT:
             sys.exit()"""
 
-train = Train(429099624, direction=BACKWARDS, index=1, offset=0)
+train = Train(429099625, direction=FORWARDS, index=13, offset=0)
+train.set_blinker(LEFT_BLINK)
 print(MAP_DATA[441256441])
 board = Board(train, size, screen, scale = 1)
 train.attatch_board(board)

@@ -1,17 +1,3 @@
-def a():
-    return False
+from railroad_game import *
 
-def b():
-    return True
-
-while 1:
-    print("w")
-    if True:
-        if False:
-            pass
-        else:
-            if a():
-                print("never")
-            if b():
-                print("b")
-                continue
+which_side((1,1),(0,0),)

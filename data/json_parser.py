@@ -20,7 +20,8 @@ def latlon_to_mercator(coord):
     # this algorithm (pseudo-Mercator) treats the earth as a sphere
     lon, lat = coord
     x = math.radians(lon) * EARTH_RADIUS
-    y = math.log(math.tan(math.pi / 4 + math.radians(lat) / 2)) * EARTH_RADIUS
+    y = -(math.log(math.tan(math.pi / 4 + math.radians(lat) / 2)) * EARTH_RADIUS)
+    # Returning negative y coordinates, since pygame plots y coordinates increasing going down
     return (x,y)
 
 
