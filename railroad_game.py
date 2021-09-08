@@ -114,7 +114,7 @@ class Train():
     def _at_deadend(self):
         return (self.direction == FORWARDS and self._at_end() and
                 not MAP_DATA[self.track_id]['endjoin']) or \
-               (self.direction == BACKWARDS and self.offset == 0 and
+               (self.direction == BACKWARDS and self.index == 0 and self.offset == 0 and
                 not MAP_DATA[self.track_id]['startjoin'])
 
     def _get_second_point(self,entry):
@@ -137,7 +137,7 @@ class Train():
                 source = 'startjoin'
 
             if len(MAP_DATA[self.track_id][source]) == 1:
-                self.track_id, self.offset, self.direction = \
+                self.track_id, self.index, self.direction = \
                     MAP_DATA[self.track_id][source][0]
             elif len(MAP_DATA[self.track_id][source]) == 2:
                 point0 = self._get_second_point(
@@ -147,9 +147,9 @@ class Train():
                 vertex = MAP_DATA[self.track_id]['coordinates'][self.index]
                 point1dir = which_side(point0,vertex, point1)
                 if point1dir == self.blinker:
-                    self.track_id, self.offset, self.direction = MAP_DATA[self.track_id][source][1]
+                    self.track_id, self.index, self.direction = MAP_DATA[self.track_id][source][1]
                 else:
-                    self.track_id, self.offset, self.direction = MAP_DATA[self.track_id][source][0]
+                    self.track_id, self.index, self.direction = MAP_DATA[self.track_id][source][0]
 
         elif ((self.offset, self.direction) in
                 MAP_DATA[self.track_id]['middlejoins']):
@@ -163,7 +163,7 @@ class Train():
                     (self.offset, self.direction)])
             offshoot_dir = point1dir = which_side(next_pt,vertex, other)
             if offshoot_dir == self.blinker:
-                self.track_id, self.offset, self.direction = \
+                self.track_id, self.index, self.direction = \
                     MAP_DATA[self.track_id]['middlejoins'][(self.offset, self.direction)]
                 switched = True
             # otherwise we don't change track.
@@ -175,8 +175,10 @@ class Train():
         while amount:
             # print(amount)
             if self.direction == FORWARDS:
-                if self._at_deadend(): return False
-                if self._switch_rail(): continue
+                if self._at_deadend():
+                    return False
+                if self._switch_rail():
+                    continue
                 segment = self._distance_to_next_point()
                 if segment > amount:
                     self.offset += amount
@@ -195,8 +197,10 @@ class Train():
                         amount -= self.offset
                         self.offset = 0
                 else:
-                    if self._at_deadend(): return False
-                    if self._switch_rail(): continue
+                    if self._at_deadend():
+                        return False
+                    if self._switch_rail():
+                        continue
                     distance_to_prev = MAP_DATA[self.track_id]['distances'][self.index - 1]
                     self.index -= 1
                     if distance_to_prev > amount:
@@ -237,10 +241,11 @@ screen = pygame.display.set_mode(size)
         if event.type == pygame.QUIT:
             sys.exit()"""
 
-train = Train(441256441, direction=BACKWARDS, index=5, offset=0)
+train = Train(429099624, direction=BACKWARDS, index=1, offset=0)
+print(MAP_DATA[441256441])
 board = Board(train, size, screen, scale = 1)
 train.attatch_board(board)
-for i in range(100):
+while True:
     screen.fill((255,0,0))
     board.draw_lines()
 
@@ -249,4 +254,4 @@ for i in range(100):
     if not train.move(5):
         print("dead end")
         break
-    print(train.index, train.offset)
+    print(train.track_id, train.index, train.offset)
