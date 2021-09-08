@@ -20,7 +20,7 @@ def latlon_to_mercator(coord):
     # this algorithm (pseudo-Mercator) treats the earth as a sphere
     lon, lat = coord
     x = math.radians(lon) * EARTH_RADIUS
-    y = -(math.log(math.tan(math.pi / 4 + math.radians(lat) / 2)) * EARTH_RADIUS)
+    y = math.log(math.tan(math.pi / 4 + math.radians(lat) / 2)) * EARTH_RADIUS
     # Returning negative y coordinates, since pygame plots y coordinates increasing going down
     return (x,y)
 
@@ -122,12 +122,12 @@ def convert(sources, dest):
                 prev_on_b = dest_structure[b[0]]["coordinates"][b[1] - 1]
                 if is_acute(prev_on_a, vertex, prev_on_b):
                     # Case C
-                    dest_structure[a[0]]["endjoin"] = (b[0], b[1], FORWARDS)
+                    dest_structure[a[0]]["endjoin"].append((b[0], b[1], FORWARDS))
                     dest_structure[b[0]]["middlejoins"][(b[1], BACKWARDS)] = \
                         (a[0], a[1], BACKWARDS)
                 else:
                     # Case B
-                    dest_structure[a[0]]["endjoin"] = (b[0], b[1], BACKWARDS)
+                    dest_structure[a[0]]["endjoin"].append((b[0], b[1], BACKWARDS))
                     dest_structure[b[0]]["middlejoins"][(b[1], FORWARDS)] = \
                         (a[0], a[1], BACKWARDS)
             elif is_end(b):
@@ -136,12 +136,12 @@ def convert(sources, dest):
                 prev_on_a = dest_structure[a[0]]["coordinates"][a[1] - 1]
                 if is_acute(prev_on_a, vertex, prev_on_b):
                     # Case C
-                    dest_structure[b[0]]["endjoin"] = (a[0], a[1], FORWARDS)
+                    dest_structure[b[0]]["endjoin"].append((a[0], a[1], FORWARDS))
                     dest_structure[a[0]]["middlejoins"][(a[1], BACKWARDS)] = \
                         (b[0], b[1], BACKWARDS)
                 else:
                     # Case B
-                    dest_structure[b[0]]["endjoin"] = (a[0], a[1], BACKWARDS)
+                    dest_structure[b[0]]["endjoin"].append((a[0], a[1], BACKWARDS))
                     dest_structure[a[0]]["middlejoins"][(a[1], FORWARDS)] = \
                         (b[0], b[1], BACKWARDS)
             else:

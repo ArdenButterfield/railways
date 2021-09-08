@@ -66,7 +66,7 @@ class Board():
         offset_x, offset_y = cx - self.train_pos[0], cy - self.train_pos[1]
         offset_x *= self.scale
         offset_y *= self.scale
-        return self.center[0] + offset_x, self.center[1] + offset_y
+        return self.center[0] + offset_x, self.center[1] - offset_y
 
     def update_train_pos(self, pos):
         self.train_pos = pos
@@ -78,7 +78,7 @@ class Board():
         for track in self.active_tracks:
             lines = [self._coord_to_pos(c) for c in MAP_DATA[track]["coordinates"]]
             pygame.draw.lines(self.screen, (255,255,255), False, lines, width=3)
-
+        pygame.draw.circle(self.screen,(255,255,0),self.center, 10)
 
 
 class Train():
@@ -154,7 +154,7 @@ class Train():
                 else:
                     self.track_id, self.index, self.direction = MAP_DATA[self.track_id][source][0]
 
-        elif ((self.offset, self.direction) in
+        elif ((self.index, self.direction) in
                 MAP_DATA[self.track_id]['middlejoins']):
             if self.direction == FORWARDS:
                 next_pt = MAP_DATA[self.track_id]['coordinates'][self.index + 1]
@@ -163,11 +163,11 @@ class Train():
             vertex = MAP_DATA[self.track_id]['coordinates'][self.index]
             other = self._get_second_point(
                 MAP_DATA[self.track_id]['middlejoins'][
-                    (self.offset, self.direction)])
+                    (self.index, self.direction)])
             offshoot_dir = point1dir = which_side(next_pt,vertex, other)
             if offshoot_dir == self.blinker:
                 self.track_id, self.index, self.direction = \
-                    MAP_DATA[self.track_id]['middlejoins'][(self.offset, self.direction)]
+                    MAP_DATA[self.track_id]['middlejoins'][(self.index, self.direction)]
                 switched = True
             # otherwise we don't change track.
         return switched
@@ -244,7 +244,7 @@ screen = pygame.display.set_mode(size)
         if event.type == pygame.QUIT:
             sys.exit()"""
 
-train = Train(429099625, direction=FORWARDS, index=13, offset=0)
+train = Train(429099625, direction=FORWARDS, index=8, offset=10)
 train.set_blinker(LEFT_BLINK)
 print(MAP_DATA[441256441])
 board = Board(train, size, screen, scale = 1)
