@@ -1,5 +1,6 @@
 import pickle
 import pygame
+from pygame import gfxdraw
 import sys
 
 FORWARDS = True
@@ -23,6 +24,17 @@ def which_side(a,vert,b):
     a = (a[0] - vert[0], a[1] - vert[1]) # centered at 0
     dot_prod = a[0] * rot_b[0] + a[1] * rot_b[1]
     return LEFT_BLINK if dot_prod < 0 else RIGHT_BLINK
+
+def thick_line(start, end):
+    # returns a polygon that is effectively a thick line from the start to end
+    # points
+    radius = 2
+    vector = ((end[0] - start[0]), (end[1] - start[1]))
+    magnitude = (vector[1] ** 2 + vector[0] ** 2)**0.5
+    radx, rady = (radius * vector[0] / magnitude, radius * vector[1] / magnitude)
+    return [(start[0] - rady, start[1] + radx), (end[0] - rady, end[1] + radx),
+            (end[0] + rady, end[1] - radx), (start[0] + rady, start[1] - radx)]
+
 
 class Board():
     def __init__(self, train, size, screen, scale=1):
@@ -74,11 +86,27 @@ class Board():
     def draw_lines(self):
         self.set_active_zones()
         self.set_active_tracks()
+        bounding_boxes = []
+        if self.train.direction == FORWARDS:
+            prev = MAP_DATA[self.train.track_id]["coordinates"][self.train.index]
+            next = MAP_DATA[self.train.track_id]["coordinates"][self.train.index + 1]
+        else:
+            next = MAP_DATA[self.train.track_id]["coordinates"][self.train.index]
+            prev = MAP_DATA[self.train.track_id]["coordinates"][self.train.index + 1]
+        # TODO: this might break when at the end of the track?
+        vector = ((next[0] - prev[0]), (next[1] - prev[1]))
+        magnitude = (vector[1] ** 2 + vector[0] ** 2) ** 0.5
+        unit_vector = (vector[0] / magnitude, vector[1] / magnitude)
 
         for track in self.active_tracks:
             lines = [self._coord_to_pos(c) for c in MAP_DATA[track]["coordinates"]]
-            pygame.draw.lines(self.screen, (255,255,255), False, lines, width=3)
-        pygame.draw.circle(self.screen,(255,255,0),self.center, 10)
+            for coord in range(len(lines) - 1):
+                pattern = thick_line(lines[coord],lines[coord + 1])
+                # pygame.draw.aalines(self.screen, thick_line(lines[coord],lines[coord + 1]), (255, 255, 255))
+                bounding_boxes.append(pygame.draw.aaline(self.screen, (255, 255, 255), pattern[0], pattern[1]))
+                bounding_boxes.append(pygame.draw.aaline(self.screen, (255, 255, 255), pattern[2], pattern[3]))
+        pygame.draw.circle(self.screen,(255,255,0),self.center, 4)
+        pygame.display.update(bounding_boxes)
 
 
 class Train():
@@ -246,14 +274,13 @@ screen = pygame.display.set_mode(size)
 
 train = Train(429099625, direction=FORWARDS, index=8, offset=10)
 train.set_blinker(LEFT_BLINK)
-print(MAP_DATA[441256441])
-board = Board(train, size, screen, scale = 1)
+board = Board(train, size, screen, scale=1)
 train.attatch_board(board)
 while True:
-    screen.fill((255,0,0))
+    screen.fill((100,0,0))
     board.draw_lines()
 
-    pygame.display.flip()
+
     pygame.time.wait(100)
     if not train.move(5):
         print("dead end")
