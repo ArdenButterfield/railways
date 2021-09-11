@@ -1,3 +1,16 @@
+# TODO: make headlight movement smoother- that is, taking several frames to
+# get to the new direction, instead of just jumping there instantly.
+
+# Also, change the annoying coordinate stuff to pygame 2dvector.
+
+# Then, implement zooming in and out?
+
+# Make a menu screen?
+
+# Soundtrack??? (do it in a day or something idk. Keep it simple, unobtrusive)
+
+# Do the things with the radio voices?
+
 import pickle
 import pygame
 from pygame import gfxdraw
@@ -8,6 +21,8 @@ BACKWARDS = False
 LEFT_BLINK = -1
 NO_BLINK = 0
 RIGHT_BLINK = 1
+
+clock = pygame.time.Clock()
 
 with open("data/RedmondOR.pickle", 'rb') as f:
     MAP_DATA, ZONE_DIR = pickle.load(f)
@@ -45,11 +60,14 @@ class Board():
         self.screen = screen
         self.scale = scale # coord distance * scale = pixel distance
         self.zone_size = 1000 * scale # How many pixels across is a zone?
-
+        self.headlight_direction = None
         self.coordwidth = self.width / self.scale
         self.coordheight = self.height / self.scale
         self.active_zones = []
         self.set_active_zones()
+        self.prev_headlight_bounding_box = None
+
+
         # print(self.active_zones)
 
     def set_active_zones(self):
@@ -84,20 +102,33 @@ class Board():
         self.train_pos = pos
 
     def draw_lines(self):
+        screen.fill((100, 0, 0))
         self.set_active_zones()
         self.set_active_tracks()
         bounding_boxes = []
-        if self.train.direction == FORWARDS:
+        if self.train._at_end():
+            prev = MAP_DATA[self.train.track_id]["coordinates"][self.train.index - 1]
+            next = MAP_DATA[self.train.track_id]["coordinates"][self.train.index]
+        else:
             prev = MAP_DATA[self.train.track_id]["coordinates"][self.train.index]
             next = MAP_DATA[self.train.track_id]["coordinates"][self.train.index + 1]
-        else:
-            next = MAP_DATA[self.train.track_id]["coordinates"][self.train.index]
-            prev = MAP_DATA[self.train.track_id]["coordinates"][self.train.index + 1]
+        if self.train.direction == BACKWARDS:
+            temp = prev
+            prev = next
+            next = temp
         # TODO: this might break when at the end of the track?
         vector = ((next[0] - prev[0]), (next[1] - prev[1]))
         magnitude = (vector[1] ** 2 + vector[0] ** 2) ** 0.5
-        unit_vector = (vector[0] / magnitude, vector[1] / magnitude)
-
+        unit_vector = (vector[0] / magnitude, -(vector[1] / magnitude))
+        headlight = [self.center,
+                     (self.center[0] + 500 * unit_vector[0] + 300 * (unit_vector[1]),
+                      self.center[1] + 500 * unit_vector[1] + 300 *(-unit_vector[0])),
+                     (self.center[0] + 500 * unit_vector[0] + 300 * (-unit_vector[1]),
+                      self.center[1] + 500 * unit_vector[1] + 300 * (unit_vector[0]))]
+        headlight_bounding_box = pygame.draw.polygon(self.screen,(80,50,0),headlight,width=0)
+        bounding_boxes.append(headlight_bounding_box)
+        bounding_boxes.append(self.prev_headlight_bounding_box)
+        self.prev_headlight_bounding_box = headlight_bounding_box
         for track in self.active_tracks:
             lines = [self._coord_to_pos(c) for c in MAP_DATA[track]["coordinates"]]
             for coord in range(len(lines) - 1):
@@ -108,6 +139,28 @@ class Board():
         pygame.draw.circle(self.screen,(255,255,0),self.center, 4)
         pygame.display.update(bounding_boxes)
 
+    def take_input(self):
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_LEFT:
+                    self.train.set_blinker(LEFT_BLINK)
+                elif event.key == pygame.K_RIGHT:
+                    self.train.set_blinker(RIGHT_BLINK)
+                elif event.key == pygame.K_UP:
+                    self.train.speed_up()
+                elif event.key == pygame.K_DOWN:
+                    self.train.slow_down()
+                elif event.key == pygame.K_SPACE:
+                    self.train.stop()
+            elif event.type == pygame.QUIT:
+                sys.exit()
+
+    def play(self):
+        while True:
+            self.take_input()
+            self.train.step()
+            self.draw_lines()
+            clock.tick(30)
 
 class Train():
     def __init__(self, track_id, index=0, offset=0, direction=FORWARDS):
@@ -117,8 +170,24 @@ class Train():
         self.offset = offset # How much past the index we are
         self.direction = direction
         # are we currently going forwards or backwards?
-        self.velocity = 0
+        self.speed = 0
         self.blinker = NO_BLINK
+
+    def speed_up(self):
+        if self.speed >= 2:
+            self.speed *= 1.5
+        else:
+            self.speed = 2
+
+    def slow_down(self):
+        if self.speed >= 2:
+            self.speed /= 1.5
+        else:
+            self.speed = 0
+
+    def stop(self):
+        self.speed = 0
+        self.direction = not self.direction
 
     def attatch_board(self, board):
         self.board = board
@@ -207,6 +276,8 @@ class Train():
             # print(amount)
             if self.direction == FORWARDS:
                 if self._at_deadend():
+                    self.index -= 1
+                    self.offset = MAP_DATA[self.track_id]['distances'][self.index]
                     return False
                 if self._switch_rail():
                     continue
@@ -242,6 +313,10 @@ class Train():
         self.board.update_train_pos(self.current_position())
         return True
 
+    def step(self):
+        if not self.move(self.speed):
+            self.stop()
+
     def current_position(self):
         if self.offset == 0:
             return MAP_DATA[self.track_id]['coordinates'][self.index]
@@ -276,7 +351,8 @@ train = Train(429099625, direction=FORWARDS, index=8, offset=10)
 train.set_blinker(LEFT_BLINK)
 board = Board(train, size, screen, scale=1)
 train.attatch_board(board)
-while True:
+board.play()
+"""while True:
     screen.fill((100,0,0))
     board.draw_lines()
 
@@ -285,4 +361,4 @@ while True:
     if not train.move(5):
         print("dead end")
         break
-    print(train.track_id, train.index, train.offset)
+    print(train.track_id, train.index, train.offset)"""
