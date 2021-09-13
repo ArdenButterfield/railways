@@ -19,7 +19,8 @@ from train import Train
 
 clock = pygame.time.Clock()
 
-
+pygame.font.init()
+font = pygame.font.SysFont('tahomabold', 24)
 
 
 
@@ -84,6 +85,7 @@ class Board():
         return self.center[0] + offset_x, self.center[1] - offset_y
 
     def update_train_pos(self, pos):
+        # Gets called by train object when the train moves.
         self.train_pos = pos
 
     def draw_lines(self):
@@ -139,6 +141,10 @@ class Board():
                 bounding_boxes.append(pygame.draw.aaline(self.screen, (255, 255, 255), pattern[0], pattern[1]))
                 bounding_boxes.append(pygame.draw.aaline(self.screen, (255, 255, 255), pattern[2], pattern[3]))
         pygame.draw.circle(self.screen,(255,255,0),self.center, 4)
+        curr_zone = get_zone(self.train_pos)
+        if curr_zone in ZONE_NAMES:
+            img = font.render(ZONE_NAMES[curr_zone], True, (255,255,255))
+            self.screen.blit(img, (20, 20))
         pygame.display.update(bounding_boxes)
 
     def take_input(self):

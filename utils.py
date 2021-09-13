@@ -2,7 +2,7 @@ import pickle
 from pygame import Vector2
 
 with open("data/PNW.pickle", 'rb') as f:
-    MAP_DATA, ZONE_DIR = pickle.load(f)
+    MAP_DATA, ZONE_DIR, ZONE_NAMES = pickle.load(f)
 
 FORWARDS = True
 BACKWARDS = False

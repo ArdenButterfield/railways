@@ -25,7 +25,7 @@ def latlon_to_mercator(coord):
     return (x,y)
 
 
-def convert(sources, dest):
+def convert(sources, citynames, dest):
     """Format of join entries:
     startjoin/endjoin: None or (ID#, point on that ID#, dir)
     middlejoin: {(point, dir): (ID, pt, dir)}
@@ -224,7 +224,33 @@ def convert(sources, dest):
         for z in dest_structure[id]['zones']:
             zones[z].add(id)
     print(zones)
+    zonenames = {}
+    cityradius = 7000
+    townradius = 3000
+    for fname in citynames:
+        with open(fname, 'r') as f:
+            places = json.load(f)
+        for place in places["features"]:
+            coord = latlon_to_mercator(place["geometry"]["coordinates"])
+            if place["properties"]["place"] == "town":
+                radius = townradius
+            elif place["properties"]["place"] == "city":
+                radius = cityradius
+            else:
+                print(f"place is a {place['properties']['place']}")
+                continue
+            topx, topy = get_zone((coord[0] - radius, coord[1] - radius))
+            bottomx, bottomy = get_zone((coord[0] + radius, coord[1] + radius))
+            for x in range(topx, bottomx):
+                for y in range(topy, bottomy):
+                    if (x,y) in zones:
+                        zonenames[(x,y)] = place["properties"]["name"]
+
+    print(zonenames)
     with open(dest, 'wb') as dest_file:
-        pickle.dump((dest_structure, dict(zones)), dest_file)
-convert(["California.geojson","Oregon.geojson","Washington.geojson"], "PNW.pickle")
-convert(["RedmondOR.geojson"],"RedmondOR.pickle")
+        pickle.dump((dest_structure, dict(zones), zonenames), dest_file)
+
+
+convert(["California.geojson","Oregon.geojson","Washington.geojson"],
+        ["Californiacities.geojson", "Oregoncities.geojson", "Washingtoncities.geojson"],
+        "PNW.pickle")
