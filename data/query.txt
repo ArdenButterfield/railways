@@ -9,3 +9,6 @@ was just too much data to get all of them at once.
 {{geocodeArea:Washington}}->.searchArea;
 (way[railway=rail](area.searchArea););
 (._;>;);out;
+
+area[name="California"];(node[place~"city|town"](area););
+out;
