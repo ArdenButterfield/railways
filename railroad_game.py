@@ -12,16 +12,9 @@
 # Do the things with the radio voices?
 
 import pygame
-from pygame import gfxdraw
 import sys
 from utils import *
 from train import Train
-
-clock = pygame.time.Clock()
-
-pygame.font.init()
-font = pygame.font.SysFont('tahomabold', 24)
-
 
 
 def thick_line(start, end):
@@ -30,44 +23,56 @@ def thick_line(start, end):
     radius = 2
     vector = ((end[0] - start[0]), (end[1] - start[1]))
     magnitude = (vector[1] ** 2 + vector[0] ** 2)**0.5
-    radx, rady = (radius * vector[0] / magnitude, radius * vector[1] / magnitude)
+    radx, rady = radius * vector[0] / magnitude, radius * vector[1] / magnitude
     return [(start[0] - rady, start[1] + radx), (end[0] - rady, end[1] + radx),
             (end[0] + rady, end[1] - radx), (start[0] + rady, start[1] - radx)]
 
+class Board:
+    def __init__(self, train, size):
+        pygame.init()
 
-class Board():
-    def __init__(self, train, size, screen, scale=1):
         self.train = train
         self.train_pos = train.current_position()
         self.size = self.width, self.height = size
         self.center = pygame.Vector2(self.width / 2, self.height / 2)
         self.beam_len = self.center.magnitude()
         self.beam_rad = self.beam_len * 0.6
-        self.screen = screen
-        self.scale = scale # coord distance * scale = pixel distance
-        self.zone_size = 1000 * scale # How many pixels across is a zone?
+        self.screen = pygame.display.set_mode(size)
+        self.scale = 1  # coord distance * scale = pixel distance
+        self.zone_size = 1000 * self.scale  # How many pixels across is a zone?
         self.headlight_direction = None
         self.coordwidth = self.width / self.scale
         self.coordheight = self.height / self.scale
         self.active_zones = []
+        self.active_tracks = None
         self.set_active_zones()
+        self.set_active_tracks()
         self.prev_headlight_bounding_box = None
-        self.base_indicator = (pygame.Vector2(15,10),pygame.Vector2(25,0),pygame.Vector2(15,-10))
+        self.base_indicator = (pygame.Vector2(15, 10),
+                               pygame.Vector2(25, 0),
+                               pygame.Vector2(15, -10))
+        self.clock = pygame.time.Clock()
 
-        # print(self.active_zones)
+        pygame.font.init()
+        self.font = pygame.font.SysFont('tahomabold', 24)
+        # draws a triange, for "blinker". It can be rotated around
+
+    def change_scale_level(self):
+        self.scale = 1 if self.scale == 0.1 else 0.1
+        self.zone_size = 1000 * self.scale
+        self.coordwidth = self.width / self.scale
+        self.coordheight = self.height / self.scale
 
     def set_active_zones(self):
-
+        self.active_zones = []
         centerx, centery = self.train.current_position()
-        # print(f"trainpos: {centerx} {centery}")
         minx, miny = get_zone((centerx - (self.coordwidth // 2),
                               centery - (self.coordheight // 2)))
         maxx, maxy = get_zone((centerx + (self.coordwidth//2),
                               centery + (self.coordheight//2)))
-        # print(minx, miny, maxx, maxy)
         for i in range(minx, maxx + 1):
             for j in range(miny, maxy + 1):
-                self.active_zones.append((i,j))
+                self.active_zones.append((i, j))
 
     def set_active_tracks(self):
         self.active_tracks = set()
@@ -89,7 +94,7 @@ class Board():
         self.train_pos = pos
 
     def draw_lines(self):
-        screen.fill((100, 0, 0))
+        self.screen.fill((100, 0, 0))
         self.set_active_zones()
         self.set_active_tracks()
         bounding_boxes = []
@@ -113,8 +118,8 @@ class Board():
             self.headlight_direction = vector.normalize()
         else:
             angle = self.headlight_direction.angle_to(vector)
-            headlight_rotation = self.train.speed / 5
-            self.headlight_direction = self.headlight_direction.rotate(min(headlight_rotation, max(angle,-headlight_rotation)))
+            rot = 0.2 * angle
+            self.headlight_direction = self.headlight_direction.rotate(rot)
 
         headlight = [self.center,
                      self.center - self.beam_len * self.headlight_direction + self.beam_rad * self.headlight_direction.rotate(-90),
@@ -143,7 +148,7 @@ class Board():
         pygame.draw.circle(self.screen,(255,255,0),self.center, 4)
         curr_zone = get_zone(self.train_pos)
         if curr_zone in ZONE_NAMES:
-            img = font.render(ZONE_NAMES[curr_zone], True, (255,255,255))
+            img = self.font.render(ZONE_NAMES[curr_zone], True, (255,255,255))
             self.screen.blit(img, (20, 20))
         pygame.display.update(bounding_boxes)
 
@@ -161,8 +166,11 @@ class Board():
                 elif event.key == pygame.K_SPACE:
                     self.headlight_direction = None
                     self.train.stop()
+                elif event.key == pygame.K_z:
+                    self.change_scale_level()
             elif event.type == pygame.QUIT:
                 sys.exit()
+
 
     def play(self):
         while True:
@@ -170,38 +178,4 @@ class Board():
             if not self.train.step():
                 self.headlight_direction = None
             self.draw_lines()
-            clock.tick(30)
-
-
-"""print('set up')
-for i in range(100):
-    print('moving')
-    if not a.move(10):
-        print("end of line")
-        break
-    a.debugpos()
-print("done")"""
-
-pygame.init()
-size = width, height = 1000, 500
-screen = pygame.display.set_mode(size)
-
-"""while 1:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            sys.exit()"""
-
-train = Train(429099625, direction=FORWARDS, index=8, offset=10)
-board = Board(train, size, screen, scale=1)
-train.attatch_board(board)
-board.play()
-"""while True:
-    screen.fill((100,0,0))
-    board.draw_lines()
-
-
-    pygame.time.wait(100)
-    if not train.move(5):
-        print("dead end")
-        break
-    print(train.track_id, train.index, train.offset)"""
+            self.clock.tick(30)

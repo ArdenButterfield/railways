@@ -1,24 +1,24 @@
 from utils import *
 import pygame
 
-class Train():
+
+class Train:
     def __init__(self, track_id, index=0, offset=0, direction=FORWARDS):
         self.board = None
-        self.track_id = track_id # The id of the track that we're on
-        self.index = index # Where along the track it is
-        self.offset = offset # How much past the index we are
+        self.track_id = track_id  # The id of the track that we're on
+        self.index = index  # Where along the track it is
+        self.offset = offset  # How much past the index we are
         self.direction = direction
         # are we currently going forwards or backwards?
         self.speed = 0
         self.blinker = NO_BLINK
+        self.slowing = False
 
     def speed_up(self):
         if self.speed < 2:
             self.speed = 2
         elif self.speed <= 100:
             self.speed *= 1.5
-
-
 
     def slow_down(self):
         if self.speed >= 2:
@@ -31,8 +31,7 @@ class Train():
         if self.speed == 0:
             self.speed_up()
         else:
-            self.speed = 0
-            self.direction = not self.direction
+            self.slowing = True
 
     def attatch_board(self, board):
         self.board = board
@@ -66,13 +65,6 @@ class Train():
                (self.direction == BACKWARDS and self._at_start() and
                 not MAP_DATA[self.track_id]['startjoin'])
 
-    def _get_second_point(self,entry):
-        id, index, dir = entry
-        if dir == BACKWARDS:
-            return pygame.Vector2(MAP_DATA[id]['coordinates'][index-1])
-        else:
-            return pygame.Vector2(MAP_DATA[id]['coordinates'][index+1])
-
     def _switch_rail(self):
         # If not at a junction, this function does nothing, and returns False.
         # If we actually switch rails, the function returns True.
@@ -89,12 +81,10 @@ class Train():
                 self.track_id, self.index, self.direction = \
                     MAP_DATA[self.track_id][source][0]
             elif len(MAP_DATA[self.track_id][source]) == 2:
-                point0 = self._get_second_point(
-                    MAP_DATA[self.track_id][source][0])
-                point1 = self._get_second_point(
-                    MAP_DATA[self.track_id][source][1])
+                point0 = get_second_point(MAP_DATA[self.track_id][source][0])
+                point1 = get_second_point(MAP_DATA[self.track_id][source][1])
                 vertex = pygame.Vector2(MAP_DATA[self.track_id]['coordinates'][self.index])
-                point1dir = which_side(point0,vertex, point1)
+                point1dir = which_side(point0, vertex, point1)
                 if point1dir == self.blinker:
                     self.track_id, self.index, self.direction = MAP_DATA[self.track_id][source][1]
                 else:
@@ -107,10 +97,8 @@ class Train():
             else:
                 next_pt = pygame.Vector2(MAP_DATA[self.track_id]['coordinates'][self.index - 1])
             vertex = pygame.Vector2(MAP_DATA[self.track_id]['coordinates'][self.index])
-            other = self._get_second_point(
-                MAP_DATA[self.track_id]['middlejoins'][
-                    (self.index, self.direction)])
-            offshoot_dir = which_side(next_pt,vertex, other)
+            other = get_second_point(MAP_DATA[self.track_id]['middlejoins'][(self.index, self.direction)])
+            offshoot_dir = which_side(next_pt, vertex, other)
             if offshoot_dir == self.blinker:
                 self.track_id, self.index, self.direction = \
                     MAP_DATA[self.track_id]['middlejoins'][(self.index, self.direction)]
@@ -163,18 +151,28 @@ class Train():
         return True
 
     def step(self):
+        if self.slowing == True:
+            if self.speed > 5:
+                self.speed *= 0.9
+            elif self.speed > 0:
+                self.speed -= 1
+            else:
+                self.speed = 0
+                self.slowing = False
+                self.direction = not self.direction
         if not self.move(self.speed):
-            self.stop()
+            self.speed = 0
+            self.direction = not self.direction
             return False
         return True
 
     def current_position(self):
         if self.offset == 0:
             return MAP_DATA[self.track_id]['coordinates'][self.index]
-        prev =  pygame.Vector2(MAP_DATA[self.track_id]['coordinates'][self.index])
-        next = pygame.Vector2(MAP_DATA[self.track_id]['coordinates'][self.index + 1])
-        a = self.offset /  MAP_DATA[self.track_id]['distances'][self.index]
-        return prev + a * (next - prev)
+        prev_coord = pygame.Vector2(MAP_DATA[self.track_id]['coordinates'][self.index])
+        next_coord = pygame.Vector2(MAP_DATA[self.track_id]['coordinates'][self.index + 1])
+        percent = self.offset / MAP_DATA[self.track_id]['distances'][self.index]
+        return prev_coord + percent * (next_coord - prev_coord)
 
     def debugpos(self):
         print(f'{self.index}, {self.track_id}, {self.offset}, [{MAP_DATA[self.track_id]["coordinates"][self.index]}]')
