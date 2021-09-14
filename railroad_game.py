@@ -14,7 +14,6 @@
 import pygame
 import sys
 from utils import *
-from train import Train
 
 
 def thick_line(start, end):
@@ -26,6 +25,7 @@ def thick_line(start, end):
     radx, rady = radius * vector[0] / magnitude, radius * vector[1] / magnitude
     return [(start[0] - rady, start[1] + radx), (end[0] - rady, end[1] + radx),
             (end[0] + rady, end[1] - radx), (start[0] + rady, start[1] - radx)]
+
 
 class Board:
     def __init__(self, train, size):
@@ -78,8 +78,8 @@ class Board:
         self.active_tracks = set()
         for zone in self.active_zones:
             if zone in ZONE_DIR:
-                for id in ZONE_DIR[zone]:
-                    self.active_tracks.add(id)
+                for track_id in ZONE_DIR[zone]:
+                    self.active_tracks.add(track_id)
 
     def _coord_to_pos(self, coord):
         # Get the screen position of a coordinate
@@ -93,27 +93,8 @@ class Board:
         # Gets called by train object when the train moves.
         self.train_pos = pos
 
-    def draw_lines(self):
-        self.screen.fill((100, 0, 0))
-        self.set_active_zones()
-        self.set_active_tracks()
-        bounding_boxes = []
-        if self.train._at_end():
-            prev = pygame.Vector2(
-                MAP_DATA[self.train.track_id]["coordinates"][self.train.index - 1])
-            next = pygame.Vector2(
-                MAP_DATA[self.train.track_id]["coordinates"][self.train.index])
-        else:
-            prev = pygame.Vector2(
-                MAP_DATA[self.train.track_id]["coordinates"][self.train.index])
-            next = pygame.Vector2(
-                MAP_DATA[self.train.track_id]["coordinates"][self.train.index + 1])
-        if self.train.direction == BACKWARDS:
-            temp = prev
-            prev = next
-            next = temp
-        vector = next - prev
-        vector[0] = -vector[0]
+    def set_headlight_direction(self):
+        vector = self.train.train_vector()
         if self.headlight_direction is None:
             self.headlight_direction = vector.normalize()
         else:
@@ -121,35 +102,58 @@ class Board:
             rot = 0.2 * angle
             self.headlight_direction = self.headlight_direction.rotate(rot)
 
-        headlight = [self.center,
-                     self.center - self.beam_len * self.headlight_direction + self.beam_rad * self.headlight_direction.rotate(-90),
-                     self.center - self.beam_len * self.headlight_direction - self.beam_rad * self.headlight_direction.rotate(-90)]
-        headlight_bounding_box = pygame.draw.polygon(self.screen,(80,50,0),headlight,width=0)
+    def indicator_polygon(self):
+        if self.train.blinker == LEFT_BLINK:
+            indicator_angle = pygame.Vector2(0, -1).angle_to(
+                self.headlight_direction)
+        else:
+            indicator_angle = pygame.Vector2(0, 1).angle_to(
+                self.headlight_direction)
+        return [self.center + i.rotate(indicator_angle)
+                for i in self.base_indicator]
+
+    def headlight_polygon(self):
+        out_vect = self.center - self.beam_len * self.headlight_direction
+        side_vect = self.beam_rad * self.headlight_direction.rotate(-90)
+        headlight = [self.center, out_vect + side_vect, out_vect - side_vect]
+        return headlight
+
+    def town_name(self):
+        curr_zone = get_zone(self.train_pos)
+        if curr_zone in ZONE_NAMES:
+            img = self.font.render(ZONE_NAMES[curr_zone], True, (255, 255, 255))
+            self.screen.blit(img, (20, 20))
+
+    def draw_lines(self):
+        self.screen.fill((100, 0, 0))
+        self.set_active_zones()
+        self.set_active_tracks()
+        self.set_headlight_direction()
+        bounding_boxes = []
+
+        headlight_bounding_box = pygame.draw.polygon(
+            self.screen, (80, 50, 0), self.headlight_polygon(), width=0)
 
         if self.train.blinker != NO_BLINK:
-            if self.train.blinker == LEFT_BLINK:
-                indicator_angle = pygame.Vector2(0,-1).angle_to(self.headlight_direction)
-            else:
-                indicator_angle = pygame.Vector2(0, 1).angle_to(self.headlight_direction)
-            indicator = [self.center + i.rotate(indicator_angle) for i in self.base_indicator]
-            indicator_bounding_box = pygame.draw.polygon(self.screen,(255,255,0),indicator,width=0)
+            indicator_bounding_box = pygame.draw.polygon(
+                self.screen, (255, 255, 0), self.indicator_polygon(), width=0)
             bounding_boxes.append(indicator_bounding_box)
 
         bounding_boxes.append(headlight_bounding_box)
         bounding_boxes.append(self.prev_headlight_bounding_box)
         self.prev_headlight_bounding_box = headlight_bounding_box
         for track in self.active_tracks:
-            lines = [self._coord_to_pos(c) for c in MAP_DATA[track]["coordinates"]]
+            coords = MAP_DATA[track]["coordinates"]
+            lines = [self._coord_to_pos(c) for c in coords]
             for coord in range(len(lines) - 1):
-                pattern = thick_line(lines[coord],lines[coord + 1])
-                # pygame.draw.aalines(self.screen, thick_line(lines[coord],lines[coord + 1]), (255, 255, 255))
-                bounding_boxes.append(pygame.draw.aaline(self.screen, (255, 255, 255), pattern[0], pattern[1]))
-                bounding_boxes.append(pygame.draw.aaline(self.screen, (255, 255, 255), pattern[2], pattern[3]))
-        pygame.draw.circle(self.screen,(255,255,0),self.center, 4)
-        curr_zone = get_zone(self.train_pos)
-        if curr_zone in ZONE_NAMES:
-            img = self.font.render(ZONE_NAMES[curr_zone], True, (255,255,255))
-            self.screen.blit(img, (20, 20))
+                pattern = thick_line(lines[coord], lines[coord + 1])
+                bbox1 = pygame.draw.aaline(
+                    self.screen, (255, 255, 255), pattern[0], pattern[1])
+                bbox2 = pygame.draw.aaline(
+                    self.screen, (255, 255, 255), pattern[2], pattern[3])
+                bounding_boxes.append(bbox1)
+                bounding_boxes.append(bbox2)
+        pygame.draw.circle(self.screen, (255, 255, 0), self.center, 4)
         pygame.display.update(bounding_boxes)
 
     def take_input(self):
@@ -170,7 +174,6 @@ class Board:
                     self.change_scale_level()
             elif event.type == pygame.QUIT:
                 sys.exit()
-
 
     def play(self):
         while True:

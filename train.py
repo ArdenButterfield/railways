@@ -174,5 +174,22 @@ class Train:
         percent = self.offset / MAP_DATA[self.track_id]['distances'][self.index]
         return prev_coord + percent * (next_coord - prev_coord)
 
-    def debugpos(self):
-        print(f'{self.index}, {self.track_id}, {self.offset}, [{MAP_DATA[self.track_id]["coordinates"][self.index]}]')
+    def train_vector(self):
+        # Get a vector of which way the train is facing.
+        if self._at_end():
+            prev = pygame.Vector2(
+                MAP_DATA[self.track_id]["coordinates"][self.index - 1])
+            next = pygame.Vector2(
+                MAP_DATA[self.track_id]["coordinates"][self.index])
+        else:
+            prev = pygame.Vector2(
+                MAP_DATA[self.track_id]["coordinates"][self.index])
+            next = pygame.Vector2(
+                MAP_DATA[self.track_id]["coordinates"][self.index + 1])
+        if self.direction == BACKWARDS:
+            temp = prev
+            prev = next
+            next = temp
+        vector = next - prev
+        vector[0] = -vector[0]
+        return vector
