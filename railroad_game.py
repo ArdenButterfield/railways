@@ -1,9 +1,5 @@
-# TODO: make headlight movement smoother- that is, taking several frames to
-
 # Also, change the annoying coordinate stuff to pygame 2dvector.
 # (did some, could stand to use lerp() for offset stuff.
-
-# Then, implement zooming in and out?
 
 # Make a menu screen?
 
@@ -60,6 +56,7 @@ class Board:
         self.text_font = pygame.font.Font('fonts/oswald.light.ttf',20)
         self.keyname_font = pygame.font.Font('fonts/OstrichSans-Black.otf',25)
         self.menu_title_font = pygame.font.Font('fonts/OstrichSans-Bold.otf',60)
+        self.logo_font = pygame.font.Font('fonts/OstrichSans-Bold.otf',200)
 
     def change_scale_level(self):
         self.scale = 1 if self.scale == 0.1 else 0.1
@@ -162,7 +159,8 @@ class Board:
                 bounding_boxes.append(bbox1)
                 bounding_boxes.append(bbox2)
         pygame.draw.circle(self.screen, (255, 255, 0), self.center, 4)
-        pygame.display.update(bounding_boxes)
+        # pygame.display.update(bounding_boxes)
+        pygame.display.flip()
 
     def resize(self, w, h):
         self.size = self.width, self.height = w, h
@@ -197,6 +195,7 @@ class Board:
                 self.resize(event.w, event.h)
 
     def play(self):
+        self.logo()
         while True:
             self.take_input()
             if self.on_menu:
@@ -209,7 +208,6 @@ class Board:
                     self.headlight_direction = None
                 self.draw_lines()
             self.clock.tick(30)
-            print(self.train_pos[0],self.train_pos[1])
 
     def menu(self):
         leave_reason = None
@@ -224,6 +222,9 @@ class Board:
                         [pygame.K_SPACE, "SPACE", "Stop/start, turn around"],
                         [pygame.K_z, "Z", "Change zoom level"],
                         [pygame.K_RETURN, "RETURN", "Toggle menu screen"]]
+
+
+
         side_button_margin = 10
         for i in range(len(side_buttons)):
             x = div_line + side_button_margin
@@ -280,38 +281,44 @@ class Board:
         return leave_reason
 
     def logo(self):
-        self.train.track_id = 238911528
-        self.train.index = 10
-        self.train.direction = BACKWARDS
-        self.train.offset = 0
-        self.train.speed = 4
-        logo_center = pygame.Vector2(-13705413.483923743,5475149.370307351)
-        for i in range(100):
-            self.train.step()
-            self.screen.fill((100, 0, 0))
-            self.set_active_zones()
-            self.set_active_tracks()
-            self.set_headlight_direction()
-            bounding_boxes = []
-            offset = pygame.Vector2(self.train_pos) - logo_center
-            headlight = [i - offset for i in self.headlight_polygon()]
-            headlight_bounding_box = pygame.draw.polygon(
-                self.screen, (80, 50, 0), headlight, width=0)
+        track_1 = (0,self.height / 2 - 2), (self.width, self.height / 2 - 2)
+        track_2 = (0, self.height / 2 + 2), (self.width, self.height / 2 + 2)
 
-            bounding_boxes.append(headlight_bounding_box)
-            bounding_boxes.append(self.prev_headlight_bounding_box)
-            self.prev_headlight_bounding_box = headlight_bounding_box
-            for track in self.active_tracks:
-                coords = MAP_DATA[track]["coordinates"]
-                lines = [pygame.Vector2(self._coord_to_pos(c)) - offset for c in coords]
-                for coord in range(len(lines) - 1):
-                    pattern = thick_line(lines[coord], lines[coord + 1])
-                    bbox1 = pygame.draw.aaline(
-                        self.screen, (255, 255, 255), pattern[0], pattern[1])
-                    bbox2 = pygame.draw.aaline(
-                        self.screen, (255, 255, 255), pattern[2], pattern[3])
-                    bounding_boxes.append(bbox1)
-                    bounding_boxes.append(bbox2)
-            pygame.draw.circle(self.screen, (255, 255, 0), self.center - offset, 4)
-            pygame.display.update(bounding_boxes)
+        horiz_start = -self.width * 0.5
+        vert = (self.width - horiz_start) * 3 // 5
+        mid = self.height//2
+        headlight_shape = [pygame.Vector2(horiz_start, mid),
+                           pygame.Vector2(self.width, mid - vert),
+                           pygame.Vector2(self.width, mid + vert)]
+        print(headlight_shape)
+        shift = pygame.Vector2(25,0)
+        fade = [80, 50, 0]
+
+        top_text = self.logo_font.render("Pacific", True, (80, 50, 0))
+        bottom_text = self.logo_font.render("Railroad", True, (80, 50, 0))
+        top_rect = top_text.get_rect()
+        top_rect.bottomright = (self.width - 20, self.height // 2 - 20)
+        bottom_rect = bottom_text.get_rect()
+        bottom_rect.topright = (self.width - 20, self.height // 2 + 20)
+
+        while headlight_shape[0][0] < self.width + 700:
+            self.screen.fill((100,0,0))
+
+            for i in range(len(headlight_shape)):
+                headlight_shape[i] += shift
+            if headlight_shape[0][0] > self.width - 300:
+                fade = [min(255,i + 5) for i in fade]
+                top_text = self.logo_font.render("Pacific", True, fade)
+                bottom_text = self.logo_font.render("Railroad", True, fade)
+            self.screen.blit(top_text, top_rect)
+            self.screen.blit(bottom_text, bottom_rect)
+            pygame.draw.polygon(
+                self.screen, (80, 50, 0), headlight_shape, width=0)
+            pygame.draw.line(
+                self.screen, (255, 255, 255), track_1[0], track_1[1])
+            pygame.draw.line(
+                self.screen, (255, 255, 255), track_2[0], track_2[1])
+            pygame.draw.circle(
+                self.screen, (255, 255, 0), headlight_shape[0], 4)
+            pygame.display.flip()
             self.clock.tick(30)

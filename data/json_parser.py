@@ -85,7 +85,7 @@ def convert(sources, citynames, dest):
                 dest_structure[b[0]]["startjoin"].append((a[0], a[1], BACKWARDS))
             elif is_end(a) and is_end(b):
                 dest_structure[a[0]]["endjoin"].append((b[0], b[1], BACKWARDS))
-                dest_structure[b[0]]["endjoin"].append((a[0], b[1], BACKWARDS))
+                dest_structure[b[0]]["endjoin"].append((a[0], a[1], BACKWARDS))
             # But normally, if there are two tracks it's because one of them is
             # sticking to the middle of the other one.
             elif is_start(a):
@@ -218,12 +218,12 @@ def convert(sources, citynames, dest):
             dest_structure[id]["distances"][j] = math.dist(
                 dest_structure[id]["coordinates"][j],
                 dest_structure[id]["coordinates"][j + 1])
-    # print(dest_structure)
+
     zones = defaultdict(set)
     for id in dest_structure:
         for z in dest_structure[id]['zones']:
             zones[z].add(id)
-    print(zones)
+    # print(zones)
     zonenames = {}
     cityradius = 7000
     townradius = 3000
@@ -237,7 +237,7 @@ def convert(sources, citynames, dest):
             elif place["properties"]["place"] == "city":
                 radius = cityradius
             else:
-                print(f"place is a {place['properties']['place']}")
+                # print(f"place is a {place['properties']['place']}")
                 continue
             topx, topy = get_zone((coord[0] - radius, coord[1] - radius))
             bottomx, bottomy = get_zone((coord[0] + radius, coord[1] + radius))
@@ -246,7 +246,7 @@ def convert(sources, citynames, dest):
                     if (x,y) in zones:
                         zonenames[(x,y)] = place["properties"]["name"]
 
-    print(zonenames)
+    # print(zonenames)
     with open(dest, 'wb') as dest_file:
         pickle.dump((dest_structure, dict(zones), zonenames), dest_file)
 
