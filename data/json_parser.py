@@ -2,6 +2,7 @@ import json
 import pickle
 import math
 from collections import defaultdict
+from pygame import Vector2
 
 FORWARDS = True
 BACKWARDS = False
@@ -208,9 +209,19 @@ def convert(sources, citynames, dest):
             print(f"There should only be 2 or three rails at an intersection: {inter}: {intersections[inter]}")
     for id in dest_structure:
         zones = set()
+        prev_zone = None
         for point in dest_structure[id]["coordinates"]:
-            zones.add(get_zone(point))
+            curr_zone = get_zone(point)
+            if curr_zone != prev_zone and prev_zone != None:
+                p1 = Vector2(prev_point)
+                p2 = Vector2(point)
+                for i in range(50):
+                    zones.add(get_zone(p1.lerp(p2, i/50)))
+            zones.add(curr_zone)
+            prev_zone = curr_zone
+            prev_point = point
         dest_structure[id]["zones"] = zones
+
     for id in dest_structure:
         dest_structure[id]["distances"] = \
             [0 for _ in range(len(dest_structure[id]["coordinates"]))]

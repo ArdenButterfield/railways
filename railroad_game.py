@@ -66,7 +66,7 @@ class Board:
 
     def set_active_zones(self):
         self.active_zones = []
-        centerx, centery = self.train.current_position()
+        centerx, centery = self.train_pos
         minx, miny = get_zone((centerx - (self.coordwidth // 2),
                               centery - (self.coordheight // 2)))
         maxx, maxy = get_zone((centerx + (self.coordwidth//2),
@@ -290,7 +290,6 @@ class Board:
         headlight_shape = [pygame.Vector2(horiz_start, mid),
                            pygame.Vector2(self.width, mid - vert),
                            pygame.Vector2(self.width, mid + vert)]
-        print(headlight_shape)
         shift = pygame.Vector2(25,0)
         fade = [80, 50, 0]
 
