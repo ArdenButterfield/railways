@@ -64,6 +64,55 @@ class Board:
         self.menu_title_font = pygame.font.Font('fonts/OstrichSans-Bold.otf',60)
         self.logo_font = pygame.font.Font('fonts/OstrichSans-Bold.otf',200)
         self.town_font = pygame.font.Font('fonts/OstrichSans-Black.otf', 40)
+        self.menu_init()
+
+    def menu_init(self):
+        self.div_line = (self.width * 4) // 7
+        self.right_panel = pygame.Rect((self.div_line, 0),
+                                  (self.width - self.div_line, self.height))
+        side_buttons_size = (110, 30)
+        side_buttons = [[pygame.K_UP, "UP", "Speed up"],
+                        [pygame.K_DOWN, "DOWN", "Slow down"],
+                        [pygame.K_LEFT, "LEFT", "Set turn signal"],
+                        [pygame.K_RIGHT, "RIGHT", ""],
+                        [pygame.K_SPACE, "SPACE", "Stop/start, turn around"],
+                        [pygame.K_z, "Z", "Change zoom level"],
+                        [pygame.K_RETURN, "RETURN", "Toggle menu screen"]]
+
+        side_button_margin = 10
+        for i in range(len(side_buttons)):
+            x = self.div_line + side_button_margin
+            y = i * (side_buttons_size[
+                         1] + 2 * side_button_margin) + side_button_margin
+            start = x, y
+            button_rect = pygame.Rect(start, side_buttons_size)
+            side_buttons[i].append(button_rect)
+
+            text = self.keyname_font.render(side_buttons[i][1], True, (0, 0, 0))
+            text_rect = text.get_rect()
+            text_rect.center = button_rect.center
+            side_buttons[i].append(text)
+            side_buttons[i].append(text_rect)
+            # side_buttons[i].append(start)
+
+            description = self.text_font.render(side_buttons[i][2], True,
+                                                (0, 0, 0))
+            description_rect = description.get_rect()
+            x = start[0] + side_buttons_size[0] + 10
+            description_rect.left = x
+            description_rect.centery = text_rect.centery
+            if side_buttons[i][1] == "LEFT":
+                description_rect.y += (side_buttons_size[
+                                           1] + side_button_margin) // 2
+            side_buttons[i].append(description)
+            side_buttons[i].append(description_rect)
+        self.side_buttons = side_buttons
+
+        self.top_box = pygame.Rect((0, 0), (self.div_line, 80))
+        self.title_text = self.menu_title_font.render("Pacific Railroad", True,
+                                                 (255, 255, 255))
+        self.title_text_box = self.title_text.get_rect()
+        self.title_text_box.center = self.top_box.center
 
     def change_scale_level(self):
         self.scale = 1 if self.scale == 0.1 else 0.1
@@ -180,6 +229,7 @@ class Board:
         self.screen = pygame.display.set_mode(self.size)
         self.coordwidth = self.width / self.scale
         self.coordheight = self.height / self.scale
+        self.menu_init()
 
     def toggle_menu(self):
         if self.on_menu:
@@ -236,62 +286,19 @@ class Board:
 
     def menu(self):
         leave_reason = None
-        div_line = (self.width * 4) // 7
-        right_panel = pygame.Rect((div_line, 0),
-                                  (self.width - div_line, self.height))
-        side_buttons_size = (110, 30)
-        side_buttons = [[pygame.K_UP, "UP", "Speed up"],
-                        [pygame.K_DOWN, "DOWN", "Slow down"],
-                        [pygame.K_LEFT, "LEFT", "Set turn signal"],
-                        [pygame.K_RIGHT, "RIGHT", ""],
-                        [pygame.K_SPACE, "SPACE", "Stop/start, turn around"],
-                        [pygame.K_z, "Z", "Change zoom level"],
-                        [pygame.K_RETURN, "RETURN", "Toggle menu screen"]]
-
-
-
-        side_button_margin = 10
-        for i in range(len(side_buttons)):
-            x = div_line + side_button_margin
-            y = i * (side_buttons_size[1] + 2 * side_button_margin) + side_button_margin
-            start = x, y
-            button_rect = pygame.Rect(start,side_buttons_size)
-            side_buttons[i].append(button_rect)
-
-            text = self.keyname_font.render(side_buttons[i][1], True, (0,0,0))
-            text_rect = text.get_rect()
-            text_rect.center = button_rect.center
-            side_buttons[i].append(text)
-            side_buttons[i].append(text_rect)
-            # side_buttons[i].append(start)
-
-            description = self.text_font.render(side_buttons[i][2], True,(0,0,0))
-            description_rect = description.get_rect()
-            x = start[0] + side_buttons_size[0] + 10
-            description_rect.left = x
-            description_rect.centery = text_rect.centery
-            if side_buttons[i][1] == "LEFT":
-                description_rect.y += (side_buttons_size[1] + side_button_margin) // 2
-            side_buttons[i].append(description)
-            side_buttons[i].append(description_rect)
-
-        top_box = pygame.Rect((0,0),(div_line, 80))
-        title_text = self.menu_title_font.render("Pacific Railroad",True,(255,255,255))
-        title_text_box = title_text.get_rect()
-        title_text_box.center = top_box.center
 
         while not leave_reason:
             self.screen.fill((100,0,0))
-            pygame.draw.rect(self.screen, (180,180,180), right_panel, 0)
-            for i in range(len(side_buttons)):
+            pygame.draw.rect(self.screen, (180,180,180), self.right_panel, 0)
+            for i in range(len(self.side_buttons)):
                 pygame.draw.rect(self.screen, (250,250,250),
-                                 side_buttons[i][3], 0, 3)
+                                 self.side_buttons[i][3], 0, 3)
                 # key text:
-                self.screen.blit(side_buttons[i][4],side_buttons[i][5])
+                self.screen.blit(self.side_buttons[i][4],self.side_buttons[i][5])
                 # description text:
-                self.screen.blit(side_buttons[i][6], side_buttons[i][7])
-            pygame.draw.rect(self.screen, (0, 0, 0), top_box)
-            self.screen.blit(title_text, title_text_box)
+                self.screen.blit(self.side_buttons[i][6], self.side_buttons[i][7])
+            pygame.draw.rect(self.screen, (0, 0, 0), self.top_box)
+            self.screen.blit(self.title_text, self.title_text_box)
             pygame.display.flip()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
