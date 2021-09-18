@@ -1,5 +1,4 @@
 # TODO:
-# Bring back the town names
 # Make the music volume do the thing
 # Make the buttons for jumping to specific towns
 # Make the buttons on the menu screen light up when you hit them
@@ -56,7 +55,6 @@ class Board:
         # draws a triange, for "blinker". It can be rotated around
 
         self.clock = pygame.time.Clock()
-        self.on_menu = False
 
         pygame.font.init()
         self.text_font = pygame.font.Font('fonts/oswald.light.ttf',20)
@@ -220,6 +218,7 @@ class Board:
         self.town_name()
         # pygame.display.update(bounding_boxes)
         pygame.display.flip()
+        self.clock.tick(30)
 
     def resize(self, w, h):
         self.size = self.width, self.height = w, h
@@ -230,59 +229,6 @@ class Board:
         self.coordwidth = self.width / self.scale
         self.coordheight = self.height / self.scale
         self.menu_init()
-
-    def toggle_menu(self):
-        if self.on_menu:
-            self.on_menu = False
-            self.music.game()
-        else:
-            self.on_menu = True
-            self.music.menu()
-
-    def send_blinker(self, blink):
-        if self.headlight_direction == None or self.headlight_direction[1] > 0:
-            self.train.set_blinker(blink)
-        else:
-            self.train.set_blinker(-blink)
-
-    def take_input(self):
-        for event in pygame.event.get():
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RETURN:
-                    self.toggle_menu()
-                if event.key == pygame.K_LEFT:
-                    self.send_blinker(LEFT_BLINK)
-                elif event.key == pygame.K_RIGHT:
-                    self.send_blinker(RIGHT_BLINK)
-                elif event.key == pygame.K_UP:
-                    self.train.speed_up()
-                elif event.key == pygame.K_DOWN:
-                    self.train.slow_down()
-                elif event.key == pygame.K_SPACE:
-                    self.headlight_direction = None
-                    self.train.stop()
-                elif event.key == pygame.K_z:
-                    self.change_scale_level()
-            elif event.type == pygame.QUIT:
-                sys.exit()
-            elif event.type == pygame.VIDEORESIZE:
-                self.resize(event.w, event.h)
-
-    def play(self):
-        self.logo()
-        self.toggle_menu()
-        while True:
-            self.take_input()
-            if self.on_menu:
-                while True:
-                    leave_reason = self.menu()
-                    if leave_reason != "resize":
-                        break
-            else:
-                if not self.train.step():
-                    self.headlight_direction = None
-                self.draw_lines()
-            self.clock.tick(30)
 
     def menu(self):
         leave_reason = None
@@ -305,7 +251,6 @@ class Board:
                     sys.exit()
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_RETURN:
-                        self.toggle_menu()
                         leave_reason = "return"
                 elif event.type == pygame.VIDEORESIZE:
                     self.resize(event.w, event.h)
