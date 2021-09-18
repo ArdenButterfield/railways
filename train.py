@@ -27,10 +27,10 @@ class Train:
             self.speed = 0
 
     def stop(self):
-        self.blinker = NO_BLINK
         if self.speed == 0:
             self.speed_up()
         else:
+            self.blinker = NO_BLINK
             self.slowing = True
 
     def attatch_board(self, board):
@@ -41,7 +41,6 @@ class Train:
             self.blinker = NO_BLINK
         else:
             self.blinker = new_blink
-        print(self.blinker)
 
     def _distance_to_next_point(self):
         dist_between_points = MAP_DATA[self.track_id]['distances'][self.index]

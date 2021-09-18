@@ -2,9 +2,9 @@ import pickle
 from pygame import Vector2
 
 with open("data/PNW.pickle", 'rb') as f:
-    print("reading map data")
-    MAP_DATA, ZONE_DIR, ZONE_NAMES = pickle.load(f)
+    MAP_DATA, ZONE_DIR, ZONE_NAMES, points = pickle.load(f)
 
+MIN_X, MIN_Y, MAX_X, MAX_Y = points
 FORWARDS = True
 BACKWARDS = False
 LEFT_BLINK = -1

@@ -1,16 +1,21 @@
-# Also, change the annoying coordinate stuff to pygame 2dvector.
-# (did some, could stand to use lerp() for offset stuff.
-
-# Make a menu screen?
-
-# Soundtrack??? (do it in a day or something idk. Keep it simple, unobtrusive)
-
-# Do the things with the radio voices?
+# TODO:
+# Bring back the town names
+# Make the music volume do the thing
+# Make the buttons for jumping to specific towns
+# Make the buttons on the menu screen light up when you hit them
+# Make a credits screen
+# Tidy up the code, maybe break up the board class?
+# Finish the music
+# Write a README
+# Keep turn when spacebar start
+# swap turn buttons when train going down
+# And that's about it.
 
 import pygame
 import sys
 from utils import *
 from pygame.locals import RESIZABLE
+from music import Music
 
 
 def thick_line(start, end):
@@ -26,6 +31,7 @@ def thick_line(start, end):
 class Board:
     def __init__(self, train, size):
         pygame.init()
+        self.music = Music()
 
         self.train = train
         self.train_pos = train.current_position()
@@ -50,13 +56,14 @@ class Board:
         # draws a triange, for "blinker". It can be rotated around
 
         self.clock = pygame.time.Clock()
-        self.on_menu = True
+        self.on_menu = False
 
         pygame.font.init()
         self.text_font = pygame.font.Font('fonts/oswald.light.ttf',20)
         self.keyname_font = pygame.font.Font('fonts/OstrichSans-Black.otf',25)
         self.menu_title_font = pygame.font.Font('fonts/OstrichSans-Bold.otf',60)
         self.logo_font = pygame.font.Font('fonts/OstrichSans-Bold.otf',200)
+        self.town_font = pygame.font.Font('fonts/OstrichSans-Black.otf', 40)
 
     def change_scale_level(self):
         self.scale = 1 if self.scale == 0.1 else 0.1
@@ -126,8 +133,10 @@ class Board:
     def town_name(self):
         curr_zone = get_zone(self.train_pos)
         if curr_zone in ZONE_NAMES:
-            img = self.keyname_font.render(ZONE_NAMES[curr_zone], True, (255, 255, 255))
-            self.screen.blit(img, (20, 20))
+            img = self.town_font.render(ZONE_NAMES[curr_zone], True, (255, 255, 255))
+            box = img.get_rect()
+            box.bottomright = pygame.Vector2(self.width - 20, self.height - 20)
+            self.screen.blit(img, box)
 
     def draw_lines(self):
         self.screen.fill((100, 0, 0))
@@ -159,6 +168,7 @@ class Board:
                 bounding_boxes.append(bbox1)
                 bounding_boxes.append(bbox2)
         pygame.draw.circle(self.screen, (255, 255, 0), self.center, 4)
+        self.town_name()
         # pygame.display.update(bounding_boxes)
         pygame.display.flip()
 
@@ -171,15 +181,29 @@ class Board:
         self.coordwidth = self.width / self.scale
         self.coordheight = self.height / self.scale
 
+    def toggle_menu(self):
+        if self.on_menu:
+            self.on_menu = False
+            self.music.game()
+        else:
+            self.on_menu = True
+            self.music.menu()
+
+    def send_blinker(self, blink):
+        if self.headlight_direction == None or self.headlight_direction[1] > 0:
+            self.train.set_blinker(blink)
+        else:
+            self.train.set_blinker(-blink)
+
     def take_input(self):
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
-                    self.on_menu = not self.on_menu
+                    self.toggle_menu()
                 if event.key == pygame.K_LEFT:
-                    self.train.set_blinker(LEFT_BLINK)
+                    self.send_blinker(LEFT_BLINK)
                 elif event.key == pygame.K_RIGHT:
-                    self.train.set_blinker(RIGHT_BLINK)
+                    self.send_blinker(RIGHT_BLINK)
                 elif event.key == pygame.K_UP:
                     self.train.speed_up()
                 elif event.key == pygame.K_DOWN:
@@ -196,6 +220,7 @@ class Board:
 
     def play(self):
         self.logo()
+        self.toggle_menu()
         while True:
             self.take_input()
             if self.on_menu:
@@ -273,7 +298,7 @@ class Board:
                     sys.exit()
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_RETURN:
-                        self.on_menu = False
+                        self.toggle_menu()
                         leave_reason = "return"
                 elif event.type == pygame.VIDEORESIZE:
                     self.resize(event.w, event.h)

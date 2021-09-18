@@ -41,6 +41,7 @@ def convert(sources, citynames, dest):
         return index == 0
 
     dest_structure = {}
+
     for source in sources:
         with open(source) as f:
             data = json.load(f)
@@ -230,6 +231,15 @@ def convert(sources, citynames, dest):
                 dest_structure[id]["coordinates"][j],
                 dest_structure[id]["coordinates"][j + 1])
 
+    min_x = min_y = math.inf
+    max_x = max_y = -math.inf
+    for id in dest_structure:
+        for point in dest_structure[id]["coordinates"]:
+            min_x = min(point[0], min_x)
+            min_y = min(point[1], min_y)
+            max_x = max(point[0], max_x)
+            max_y = max(point[1], max_y)
+
     zones = defaultdict(set)
     for id in dest_structure:
         for z in dest_structure[id]['zones']:
@@ -256,10 +266,9 @@ def convert(sources, citynames, dest):
                 for y in range(topy, bottomy):
                     if (x,y) in zones:
                         zonenames[(x,y)] = place["properties"]["name"]
-
-    # print(zonenames)
+    print(min_x, min_y, max_x, max_y)
     with open(dest, 'wb') as dest_file:
-        pickle.dump((dest_structure, dict(zones), zonenames), dest_file)
+        pickle.dump((dest_structure, dict(zones), zonenames, (min_x, min_y, max_x, max_y)), dest_file)
 
 
 convert(["California.geojson","Oregon.geojson","Washington.geojson"],
