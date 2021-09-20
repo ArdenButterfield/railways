@@ -1,3 +1,7 @@
+PACIFIC RAILROAD
+Game and music by Arden Butterfield, 2021.
+With thanks to Ash for proposing the game jam, and to all the UO CIS folks for continued support and community.
+Map data from Open Street Map, accessed using Overpass Turbo.
 Fonts used:
-https://www.1001fonts.com/oswald-font.html
-https://www.1001fonts.com/ostrich-sans-font.html
+Oswald by Vernon Adams: https://www.1001fonts.com/oswald-font.html
+Ostrich Sans by Tyler Finck: https://www.1001fonts.com/ostrich-sans-font.html

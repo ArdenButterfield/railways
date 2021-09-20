@@ -8,6 +8,7 @@ class Controller:
         self.train = train
         self.music = music
         self.on_menu = False
+        self.on_credits = False
 
     def send_blinker(self, blink):
         # This makes the blinker more intuitive: we blink from the user
@@ -28,51 +29,14 @@ class Controller:
             self.on_menu = True
             self.music.menu()
 
-    def take_game_input(self):
-        for event in pygame.event.get():
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RETURN:
-                    self.toggle_menu()
-                if event.key == pygame.K_LEFT:
-                    self.send_blinker(LEFT_BLINK)
-                elif event.key == pygame.K_RIGHT:
-                    self.send_blinker(RIGHT_BLINK)
-                elif event.key == pygame.K_UP:
-                    self.train.speed_up()
-                elif event.key == pygame.K_DOWN:
-                    self.train.slow_down()
-                elif event.key == pygame.K_SPACE:
-                    self.headlight_direction = None
-                    self.train.stop()
-                elif event.key == pygame.K_z:
-                    self.board.change_scale_level()
-            elif event.type == pygame.QUIT:
-                sys.exit()
-            elif event.type == pygame.VIDEORESIZE:
-                self.board.resize(event.w, event.h)
-
-    def take_menu_input(self):
-        # print("taking menu input")
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                sys.exit()
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RETURN:
-                    self.toggle_menu()
-                    break
-            elif event.type == pygame.VIDEORESIZE:
-                self.board.resize(event.w, event.h)
-            elif event.type == pygame.MOUSEBUTTONDOWN and self.board.set_click_location():
-                # print("click registered")
-                self.toggle_menu()
-                break
-
-
     def take_input(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
             elif event.type == pygame.KEYDOWN:
+                if self.on_credits == True:
+                    self.on_credits = False
+                    break
                 if event.key == pygame.K_RETURN:
                     self.toggle_menu()
                     break
@@ -92,17 +56,22 @@ class Controller:
                         self.board.change_scale_level()
             elif event.type == pygame.VIDEORESIZE:
                 self.board.resize(event.w, event.h)
-            elif event.type == pygame.MOUSEBUTTONDOWN and \
-                    self.on_menu and self.board.set_click_location():
-                self.toggle_menu()
-                break
+            elif event.type == pygame.MOUSEBUTTONDOWN and self.on_menu:
+                if self.board.yard_button_click():
+                    self.toggle_menu()
+                    break
+                elif self.board.credits_button_click():
+                    self.on_credits = True
+                    break
 
     def play(self):
         self.board.logo()
         self.toggle_menu()
         while True:
             self.take_input()
-            if self.on_menu:
+            if self.on_credits:
+                self.board.credits()
+            elif self.on_menu:
                 self.board.menu()
             else:
                 if not self.train.step():

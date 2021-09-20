@@ -1,13 +1,9 @@
 # TODO:
-# Make the music volume do the thing
-# Make the buttons for jumping to specific towns
 # Make the buttons on the menu screen light up when you hit them
 # Make a credits screen
 # Tidy up the code, maybe break up the board class?
 # Finish the music
 # Write a README
-# Keep turn when spacebar start
-# swap turn buttons when train going down
 # And that's about it.
 
 import pygame
@@ -17,6 +13,14 @@ from pygame.locals import RESIZABLE
 from music import Music
 from menu_buttons import yard_buttons, side_buttons
 
+BUTTON_COLOR = (250, 250, 250)
+BUTTON_HOVER_COLOR = (150, 150, 150)
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+BACKGROUND_COLOR = (100, 0, 0)
+HEADLIGHT_COLOR = (80, 50, 0)
+TRAIN_COLOR = (250, 250, 0)
+SIDE_PANEL_COLOR = (180, 180, 180)
 
 def thick_line(start, end):
     # returns a polygon that is effectively a thick line from the start to end
@@ -81,7 +85,7 @@ class Board:
             button_rect = pygame.Rect(start, side_buttons_size)
             side_buttons[i].append(button_rect)
 
-            text = self.keyname_font.render(side_buttons[i][1], True, (0, 0, 0))
+            text = self.keyname_font.render(side_buttons[i][1], True, BLACK)
             text_rect = text.get_rect()
             text_rect.center = button_rect.center
             side_buttons[i].append(text)
@@ -89,7 +93,7 @@ class Board:
             # side_buttons[i].append(start)
 
             description = self.text_font.render(side_buttons[i][2], True,
-                                                (0, 0, 0))
+                                                BLACK)
             description_rect = description.get_rect()
             x = start[0] + side_buttons_size[0] + 10
             description_rect.left = x
@@ -116,10 +120,10 @@ class Board:
                 y = self.left_panel.top + row * button_space_h + button_margin
                 button_rect = pygame.Rect((x, y), (w, h))
                 yard_buttons[i].append(button_rect)
-                text = self.town_font.render(yard_buttons[i][0], True, (0,0,0))
+                text = self.town_font.render(yard_buttons[i][0], True, BLACK)
                 text_rect = text.get_rect()
                 text_rect.center = button_rect.center
-                yard_buttons[i].append((250,250,250))
+                yard_buttons[i].append(BUTTON_COLOR)
                 yard_buttons[i].append(text)
                 yard_buttons[i].append(text_rect)
                 i += 1
@@ -132,12 +136,34 @@ class Board:
         self.top_box = pygame.Rect((0, 0), (self.div_line, 80))
         self.left_panel = pygame.Rect((0,80),(self.div_line - 0,self.height - 80))
         self.title_text = self.menu_title_font.render("Pacific Railroad", True,
-                                                 (255, 255, 255))
+                                                 WHITE)
         self.title_text_box = self.title_text.get_rect()
         self.title_text_box.center = self.top_box.center
 
+        self.credits_button = pygame.Rect((self.width - 100, self.height - 40),(90,30))
+        self.credits_text = self.keyname_font.render("CREDITS", True, BLACK)
+        self.credits_box = self.credits_text.get_rect()
+        self.credits_box.center = self.credits_button.center
+        self.credits_box_color = BUTTON_COLOR
+
         self.side_buttons_init()
         self.yard_buttons_init()
+        self.credits_init()
+
+    def credits_init(self):
+        with open("credits.txt", "r") as f:
+            credits_text = f.readlines()
+        credits_text.append("Press any key to return to the menu.")
+        self.credits_lines = []
+        y = 30
+        for line in credits_text:
+            line = line.strip()
+            t = self.text_font.render(line, True, BLACK)
+            tbox = t.get_rect()
+            tbox.topleft = (30,y)
+            self.credits_lines.append([t,tbox])
+            y += 30
+
 
     def change_scale_level(self):
         self.scale = 1 if self.scale == 0.1 else 0.1
@@ -207,24 +233,24 @@ class Board:
     def town_name(self):
         curr_zone = get_zone(self.train_pos)
         if curr_zone in ZONE_NAMES:
-            img = self.town_font.render(ZONE_NAMES[curr_zone], True, (255, 255, 255))
+            img = self.town_font.render(ZONE_NAMES[curr_zone], True, WHITE)
             box = img.get_rect()
             box.bottomright = pygame.Vector2(self.width - 20, self.height - 20)
             self.screen.blit(img, box)
 
     def draw_lines(self):
-        self.screen.fill((100, 0, 0))
+        self.screen.fill(BACKGROUND_COLOR)
         self.set_active_zones()
         self.set_active_tracks()
         self.set_headlight_direction()
         bounding_boxes = []
 
         headlight_bounding_box = pygame.draw.polygon(
-            self.screen, (80, 50, 0), self.headlight_polygon(), width=0)
+            self.screen, HEADLIGHT_COLOR, self.headlight_polygon(), width=0)
 
         if self.train.blinker != NO_BLINK:
             indicator_bounding_box = pygame.draw.polygon(
-                self.screen, (255, 255, 0), self.indicator_polygon(), width=0)
+                self.screen, TRAIN_COLOR, self.indicator_polygon(), width=0)
             bounding_boxes.append(indicator_bounding_box)
 
         bounding_boxes.append(headlight_bounding_box)
@@ -236,12 +262,12 @@ class Board:
             for coord in range(len(lines) - 1):
                 pattern = thick_line(lines[coord], lines[coord + 1])
                 bbox1 = pygame.draw.aaline(
-                    self.screen, (255, 255, 255), pattern[0], pattern[1])
+                    self.screen, WHITE, pattern[0], pattern[1])
                 bbox2 = pygame.draw.aaline(
-                    self.screen, (255, 255, 255), pattern[2], pattern[3])
+                    self.screen, WHITE, pattern[2], pattern[3])
                 bounding_boxes.append(bbox1)
                 bounding_boxes.append(bbox2)
-        pygame.draw.circle(self.screen, (255, 255, 0), self.center, 4)
+        pygame.draw.circle(self.screen, TRAIN_COLOR, self.center, 4)
         self.town_name()
         # pygame.display.update(bounding_boxes)
         pygame.display.flip()
@@ -257,21 +283,26 @@ class Board:
         self.coordheight = self.height / self.scale
         self.menu_init()
 
-    def set_yard_colors(self):
+    def set_button_colors(self):
         mousepos = pygame.mouse.get_pos()
         hover = False
         for i in range(len(yard_buttons)):
             if yard_buttons[i][4].collidepoint(mousepos):
-                yard_buttons[i][5] = (150,150,150)
+                yard_buttons[i][5] = BUTTON_HOVER_COLOR
                 hover = True
             else:
-                yard_buttons[i][5] = (250,250,250)
+                yard_buttons[i][5] = BUTTON_COLOR
+        if self.credits_button.collidepoint(mousepos):
+            self.credits_box_color = BUTTON_HOVER_COLOR
+            hover = True
+        else:
+            self.credits_box_color = BUTTON_COLOR
         if hover:
             pygame.mouse.set_system_cursor(pygame.SYSTEM_CURSOR_HAND)
         else:
             pygame.mouse.set_system_cursor(pygame.SYSTEM_CURSOR_ARROW)
 
-    def set_click_location(self):
+    def yard_button_click(self):
         mousepos = pygame.mouse.get_pos()
         clicked = False
         for i in range(len(yard_buttons)):
@@ -283,24 +314,41 @@ class Board:
                 pygame.mouse.set_system_cursor(pygame.SYSTEM_CURSOR_ARROW)
         return clicked
 
+    def credits_button_click(self):
+        mousepos = pygame.mouse.get_pos()
+        if self.credits_button.collidepoint(mousepos):
+            pygame.mouse.set_system_cursor(pygame.SYSTEM_CURSOR_ARROW)
+            return True
+        return False
+
     def menu(self):
-        self.screen.fill((100,0,0))
-        pygame.draw.rect(self.screen, (180,180,180), self.right_panel, 0)
-        self.set_yard_colors()
+        self.screen.fill(BACKGROUND_COLOR)
+        pygame.draw.rect(self.screen, SIDE_PANEL_COLOR, self.right_panel, 0)
+        self.set_button_colors()
         for i in range(len(side_buttons)):
-            pygame.draw.rect(self.screen, (250,250,250),
+            pygame.draw.rect(self.screen, BUTTON_COLOR,
                              side_buttons[i][3], 0, 3)
             # key text:
             self.screen.blit(side_buttons[i][4],side_buttons[i][5])
             # description text:
             self.screen.blit(side_buttons[i][6], side_buttons[i][7])
         for i in range(len(yard_buttons)):
-            pygame.draw.rect(self.screen, yard_buttons[i][5],yard_buttons[i][4])
+            pygame.draw.rect(self.screen, yard_buttons[i][5],yard_buttons[i][4],0,3)
             self.screen.blit(yard_buttons[i][6], yard_buttons[i][7])
-        pygame.draw.rect(self.screen, (0, 0, 0), self.top_box)
+        pygame.draw.rect(self.screen, BLACK, self.top_box)
         self.screen.blit(self.title_text, self.title_text_box)
+        pygame.draw.rect(self.screen, self.credits_box_color, self.credits_button,0,3)
+        self.screen.blit(self.credits_text, self.credits_box)
         pygame.display.flip()
         self.clock.tick(30)
+
+    def credits(self):
+        self.screen.fill(BUTTON_COLOR)
+        for line in self.credits_lines:
+            self.screen.blit(line[0], line[1])
+        pygame.display.flip()
+        self.clock.tick(30)
+
 
     def logo(self):
         track_1 = (0,self.height / 2 - 2), (self.width, self.height / 2 - 2)
@@ -315,15 +363,15 @@ class Board:
         shift = pygame.Vector2(25,0)
         fade = [80, 50, 0]
 
-        top_text = self.logo_font.render("Pacific", True, (80, 50, 0))
-        bottom_text = self.logo_font.render("Railroad", True, (80, 50, 0))
+        top_text = self.logo_font.render("Pacific", True, HEADLIGHT_COLOR)
+        bottom_text = self.logo_font.render("Railroad", True, HEADLIGHT_COLOR)
         top_rect = top_text.get_rect()
         top_rect.bottomright = (self.width - 20, self.height // 2 - 20)
         bottom_rect = bottom_text.get_rect()
         bottom_rect.topright = (self.width - 20, self.height // 2 + 20)
 
         while headlight_shape[0][0] < self.width + 700:
-            self.screen.fill((100,0,0))
+            self.screen.fill(BACKGROUND_COLOR)
 
             for i in range(len(headlight_shape)):
                 headlight_shape[i] += shift
@@ -334,12 +382,12 @@ class Board:
             self.screen.blit(top_text, top_rect)
             self.screen.blit(bottom_text, bottom_rect)
             pygame.draw.polygon(
-                self.screen, (80, 50, 0), headlight_shape, width=0)
+                self.screen, HEADLIGHT_COLOR, headlight_shape, width=0)
             pygame.draw.line(
-                self.screen, (255, 255, 255), track_1[0], track_1[1])
+                self.screen, WHITE, track_1[0], track_1[1])
             pygame.draw.line(
-                self.screen, (255, 255, 255), track_2[0], track_2[1])
+                self.screen, WHITE, track_2[0], track_2[1])
             pygame.draw.circle(
-                self.screen, (255, 255, 0), headlight_shape[0], 4)
+                self.screen, TRAIN_COLOR, headlight_shape[0], 4)
             pygame.display.flip()
             self.clock.tick(30)
