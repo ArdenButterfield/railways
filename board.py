@@ -1,9 +1,8 @@
 # TODO:
 # Make the buttons on the menu screen light up when you hit them
-# Make a credits screen
 # Tidy up the code, maybe break up the board class?
 # Finish the music
-# Write a README
+# Write a READMErm
 # And that's about it.
 
 import pygame
