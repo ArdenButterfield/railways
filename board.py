@@ -277,7 +277,7 @@ class Board:
         self.center = pygame.Vector2(self.width / 2, self.height / 2)
         self.beam_len = self.center.magnitude()
         self.beam_rad = self.beam_len * 0.6
-        self.screen = pygame.display.set_mode(self.size)
+        self.screen = pygame.display.set_mode(self.size, RESIZABLE)
         self.coordwidth = self.width / self.scale
         self.coordheight = self.height / self.scale
         self.menu_init()
