@@ -1,4 +1,4 @@
-# Pacific Railroad
+# Pacific Railroad (unfinished)
 A game by Arden Butterfield
 
 ## Instructions for running
