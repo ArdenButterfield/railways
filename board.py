@@ -15,6 +15,7 @@ import sys
 from utils import *
 from pygame.locals import RESIZABLE
 from music import Music
+from menu_buttons import yard_buttons, side_buttons
 
 
 def thick_line(start, end):
@@ -28,6 +29,9 @@ def thick_line(start, end):
             (end[0] + rady, end[1] - radx), (start[0] + rady, start[1] - radx)]
 
 class Board:
+    """
+    Responsible for drawing to the screen.
+    """
     def __init__(self, train, size):
         pygame.init()
         self.music = Music()
@@ -64,21 +68,12 @@ class Board:
         self.town_font = pygame.font.Font('fonts/OstrichSans-Black.otf', 40)
         self.menu_init()
 
-    def menu_init(self):
-        self.div_line = (self.width * 4) // 7
-        self.right_panel = pygame.Rect((self.div_line, 0),
-                                  (self.width - self.div_line, self.height))
+    def side_buttons_init(self):
         side_buttons_size = (110, 30)
-        side_buttons = [[pygame.K_UP, "UP", "Speed up"],
-                        [pygame.K_DOWN, "DOWN", "Slow down"],
-                        [pygame.K_LEFT, "LEFT", "Set turn signal"],
-                        [pygame.K_RIGHT, "RIGHT", ""],
-                        [pygame.K_SPACE, "SPACE", "Stop/start, turn around"],
-                        [pygame.K_z, "Z", "Change zoom level"],
-                        [pygame.K_RETURN, "RETURN", "Toggle menu screen"]]
 
         side_button_margin = 10
         for i in range(len(side_buttons)):
+            side_buttons[i] = side_buttons[i][:3]
             x = self.div_line + side_button_margin
             y = i * (side_buttons_size[
                          1] + 2 * side_button_margin) + side_button_margin
@@ -104,13 +99,45 @@ class Board:
                                            1] + side_button_margin) // 2
             side_buttons[i].append(description)
             side_buttons[i].append(description_rect)
-        self.side_buttons = side_buttons
+
+    def yard_buttons_init(self):
+        cols = 2
+        rows = len(yard_buttons) // 2 # Assuming even number of yard buttons.
+        button_space_w = self.left_panel.width // cols
+        button_space_h = self.left_panel.height // rows
+        button_margin = 15
+        i = 0
+        w = button_space_w - 2 * button_margin
+        h = button_space_h - 2 * button_margin
+        for row in range(rows):
+            for col in range(cols):
+                yard_buttons[i] = yard_buttons[i][:4]
+                x = self.left_panel.left + col * button_space_w + button_margin
+                y = self.left_panel.top + row * button_space_h + button_margin
+                button_rect = pygame.Rect((x, y), (w, h))
+                yard_buttons[i].append(button_rect)
+                text = self.town_font.render(yard_buttons[i][0], True, (0,0,0))
+                text_rect = text.get_rect()
+                text_rect.center = button_rect.center
+                yard_buttons[i].append((250,250,250))
+                yard_buttons[i].append(text)
+                yard_buttons[i].append(text_rect)
+                i += 1
+
+    def menu_init(self):
+        self.div_line = (self.width * 4) // 7
+        self.right_panel = pygame.Rect((self.div_line, 0),
+                                  (self.width - self.div_line, self.height))
 
         self.top_box = pygame.Rect((0, 0), (self.div_line, 80))
+        self.left_panel = pygame.Rect((0,80),(self.div_line - 0,self.height - 80))
         self.title_text = self.menu_title_font.render("Pacific Railroad", True,
                                                  (255, 255, 255))
         self.title_text_box = self.title_text.get_rect()
         self.title_text_box.center = self.top_box.center
+
+        self.side_buttons_init()
+        self.yard_buttons_init()
 
     def change_scale_level(self):
         self.scale = 1 if self.scale == 0.1 else 0.1
@@ -230,32 +257,50 @@ class Board:
         self.coordheight = self.height / self.scale
         self.menu_init()
 
-    def menu(self):
-        leave_reason = None
+    def set_yard_colors(self):
+        mousepos = pygame.mouse.get_pos()
+        hover = False
+        for i in range(len(yard_buttons)):
+            if yard_buttons[i][4].collidepoint(mousepos):
+                yard_buttons[i][5] = (150,150,150)
+                hover = True
+            else:
+                yard_buttons[i][5] = (250,250,250)
+        if hover:
+            pygame.mouse.set_system_cursor(pygame.SYSTEM_CURSOR_HAND)
+        else:
+            pygame.mouse.set_system_cursor(pygame.SYSTEM_CURSOR_ARROW)
 
-        while not leave_reason:
-            self.screen.fill((100,0,0))
-            pygame.draw.rect(self.screen, (180,180,180), self.right_panel, 0)
-            for i in range(len(self.side_buttons)):
-                pygame.draw.rect(self.screen, (250,250,250),
-                                 self.side_buttons[i][3], 0, 3)
-                # key text:
-                self.screen.blit(self.side_buttons[i][4],self.side_buttons[i][5])
-                # description text:
-                self.screen.blit(self.side_buttons[i][6], self.side_buttons[i][7])
-            pygame.draw.rect(self.screen, (0, 0, 0), self.top_box)
-            self.screen.blit(self.title_text, self.title_text_box)
-            pygame.display.flip()
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    sys.exit()
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_RETURN:
-                        leave_reason = "return"
-                elif event.type == pygame.VIDEORESIZE:
-                    self.resize(event.w, event.h)
-                    leave_reason = "resize"
-        return leave_reason
+    def set_click_location(self):
+        mousepos = pygame.mouse.get_pos()
+        clicked = False
+        for i in range(len(yard_buttons)):
+            if yard_buttons[i][4].collidepoint(mousepos):
+                self.train.track_id = yard_buttons[i][1]
+                self.train.index = yard_buttons[i][2]
+                self.train.direction = yard_buttons[i][3]
+                clicked = True
+                pygame.mouse.set_system_cursor(pygame.SYSTEM_CURSOR_ARROW)
+        return clicked
+
+    def menu(self):
+        self.screen.fill((100,0,0))
+        pygame.draw.rect(self.screen, (180,180,180), self.right_panel, 0)
+        self.set_yard_colors()
+        for i in range(len(side_buttons)):
+            pygame.draw.rect(self.screen, (250,250,250),
+                             side_buttons[i][3], 0, 3)
+            # key text:
+            self.screen.blit(side_buttons[i][4],side_buttons[i][5])
+            # description text:
+            self.screen.blit(side_buttons[i][6], side_buttons[i][7])
+        for i in range(len(yard_buttons)):
+            pygame.draw.rect(self.screen, yard_buttons[i][5],yard_buttons[i][4])
+            self.screen.blit(yard_buttons[i][6], yard_buttons[i][7])
+        pygame.draw.rect(self.screen, (0, 0, 0), self.top_box)
+        self.screen.blit(self.title_text, self.title_text_box)
+        pygame.display.flip()
+        self.clock.tick(30)
 
     def logo(self):
         track_1 = (0,self.height / 2 - 2), (self.width, self.height / 2 - 2)

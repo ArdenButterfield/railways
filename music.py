@@ -20,6 +20,7 @@ class Music:
         self.right_music.set_volume(x_offset)
 
     def menu(self):
+        print("start menu")
         self.menu_music.play(fade_ms=5000)
         self.top_music.stop()
         self.bottom_music.stop()
